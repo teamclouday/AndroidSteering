@@ -1,7 +1,10 @@
 package com.example.androidsteering;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.math.MathUtils;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.hardware.Sensor;
@@ -10,15 +13,23 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+
+import org.w3c.dom.Text;
+
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity
 {
 
     private SensorManager sensorManager;
     private TextView txtViewDebug;
+    private TextView txtViewBTH;
     private MyService service;
+    private BluetoothAdapter bthAdapter;
+    private BluetoothSocket bthSocket;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -38,8 +49,10 @@ public class MainActivity extends AppCompatActivity
         // set main view
         setContentView(R.layout.main);
 
-        // get debug textview
+        // get debug text view
         txtViewDebug = findViewById(R.id.textViewDebug);
+        // get bluetooth text view
+        txtViewBTH = findViewById(R.id.textViewBTH);
 
         service.start();
     }
@@ -60,22 +73,26 @@ public class MainActivity extends AppCompatActivity
 
     class MyService implements SensorEventListener
     {
-        private Sensor rotationSensor;
-        private final float[] rotationMatrix = new float[16];
+        private Sensor accSensor;
+        private Sensor magSensor;
+
+        private final float[] accReading = new float[3];
+        private final float[] magReading = new float[3];
+        private final float[] rotationMatrix = new float[9];
+        private final float[] remapMatrix = new float[9];
+        private final float[] orientationMatrix = new float[3];
 
         public MyService()
         {
-            rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
-            rotationMatrix[0] = 1;
-            rotationMatrix[4] = 1;
-            rotationMatrix[8] = 1;
-            rotationMatrix[12] = 1;
+            accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         }
 
         public void start()
         {
             // sample period is set to 10ms
-            sensorManager.registerListener(this, rotationSensor, 10000);
+            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_NORMAL, SensorManager.SENSOR_DELAY_UI);
         }
 
         public void stop()
@@ -83,33 +100,30 @@ public class MainActivity extends AppCompatActivity
             sensorManager.unregisterListener(this);
         }
 
-
         @Override
         public void onSensorChanged(SensorEvent event)
         {
-            if(event.sensor.getType() == Sensor.TYPE_GAME_ROTATION_VECTOR)
+            if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
             {
-                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values);
-                String debugText = "[";
-                for(int i = 0; i < 4; i++)
-                {
-                    for(int j = 0; j < 4; j++)
-                    {
-                        debugText += String.format("%.1f", rotationMatrix[i*4+j]);
-                        if(j != 3)
-                            debugText += "\t";
-                    }
-                    if(i != 3)
-                        debugText += "\n";
-                }
-                debugText += "]";
-                txtViewDebug.setText(debugText);
+                System.arraycopy(event.values, 0, accReading, 0, accReading.length);
+                update();
+            }
+            else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            {
+                System.arraycopy(event.values, 0, magReading, 0, magReading.length);
+                update();
             }
         }
 
-        private float findQuaternionTwist(float[] q, float[] axis)
+        private void update()
         {
+            SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
+            SensorManager.getOrientation(rotationMatrix, orientationMatrix);
 
+            int pitch = (int)Math.toDegrees(orientationMatrix[1]);
+            int roll = (int)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
+            String message = String.format(Locale.ENGLISH, "Pitch:\t%d\nRoll:\t%d", pitch, roll);
+            txtViewDebug.setText(message);
         }
 
         @Override
