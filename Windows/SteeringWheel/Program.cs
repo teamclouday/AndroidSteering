@@ -11,7 +11,12 @@ namespace SteeringWheel
     {
         static void Main(string[] args)
         {
+            MyBluetooth bltDevice = new MyBluetooth();
 
+            while(!bltDevice.connected)
+            {
+                System.Threading.Thread.Sleep(50);
+            }
         }
     }
 }
