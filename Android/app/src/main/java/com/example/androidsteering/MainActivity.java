@@ -2,6 +2,10 @@ package com.example.androidsteering;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -11,6 +15,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -26,6 +31,7 @@ import android.widget.Toast;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
@@ -48,6 +54,7 @@ enum MotionAcceleration
 enum BluetoothStatus
 {
     NONE,
+    SEARCHING,
     CONNECTED
 }
 
@@ -73,7 +80,6 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         Objects.requireNonNull(getSupportActionBar()).hide();
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         checkBTH();
         checkSensor();
@@ -85,17 +91,16 @@ public class MainActivity extends AppCompatActivity
         bthHandler = new Handler();
 
         setContentView(R.layout.main);
+        findViewById(R.id.btRetry).setVisibility(View.GONE);
 
         txtViewDebug = findViewById(R.id.textViewDebug);
         txtViewBTH = findViewById(R.id.textViewBTH);
-
-        serviceSensor.start();
 
         UIRunner = new Runnable() {
             @Override
             public void run() {
                 String motionSteer;
-                switch(serviceSensor.readMotionSteer())
+                switch(serviceSensor.motionSteering)
                 {
                     case LEFT:
                         motionSteer = "Left";
@@ -107,9 +112,9 @@ public class MainActivity extends AppCompatActivity
                         motionSteer = "None";
                         break;
                 }
-                motionSteer += "><" + serviceSensor.readPitch();
+                motionSteer += "><" + serviceSensor.motionPitch;
                 String motionAcc;
-                switch(serviceSensor.readMotionAcc())
+                switch(serviceSensor.motionAcceleration)
                 {
                     case FORWARD:
                         motionAcc = "Forward";
@@ -121,8 +126,28 @@ public class MainActivity extends AppCompatActivity
                         motionAcc = "None";
                         break;
                 }
-                motionAcc += "><" + serviceSensor.readRoll();
+                motionAcc += "><" + serviceSensor.motionRoll;
                 txtViewDebug.setText(String.format("Steering: %s\nAcceleration: %s", motionSteer, motionAcc));
+
+                String bthStatus;
+                BluetoothStatus status = BluetoothStatus.NONE;
+                if(serviceBTH != null)
+                    status = serviceBTH.myStatus;
+                switch(status)
+                {
+                    case SEARCHING:
+                        bthStatus = "Searching";
+                        break;
+                    case CONNECTED:
+                        bthStatus = "Device Connected";
+                        break;
+                    default:
+                        bthStatus = "No Connection";
+                        break;
+                }
+                if(txtViewBTH.getVisibility() != View.GONE)
+                    txtViewBTH.setText(String.format("Bluetooth: %s", bthStatus));
+
                 UIHandler.postDelayed(this, 20);
             }
         };
@@ -136,7 +161,7 @@ public class MainActivity extends AppCompatActivity
                 }
                 if(!serviceBTH.isCreated())
                 {
-                    serviceBTH.disconnect();
+                    serviceBTH.destroy();
                     serviceBTH = null;
                     bthHandler.removeCallbacksAndMessages(this);
                     findViewById(R.id.btRetry).setVisibility(View.VISIBLE);
@@ -147,10 +172,14 @@ public class MainActivity extends AppCompatActivity
                 {
                     if(serviceBTH.readStatus() != BluetoothStatus.CONNECTED)
                     {
-                        if(!serviceBTH.connect())
+                        if(serviceBTH.readStatus() == BluetoothStatus.SEARCHING)
                         {
-                            serviceBTH.disconnect();
-                            serviceBTH = null;
+                            bthHandler.postDelayed(this, 50);
+                            return;
+                        }
+                        else if(!serviceBTH.connect())
+                        {
+                            serviceBTH.updatePotential();
                             bthHandler.removeCallbacksAndMessages(this);
                             findViewById(R.id.btRetry).setVisibility(View.VISIBLE);
                             findViewById(R.id.textViewBTH).setVisibility(View.GONE);
@@ -188,7 +217,7 @@ public class MainActivity extends AppCompatActivity
     public void onDestroy()
     {
         if(serviceBTH != null)
-            serviceBTH.disconnect();
+            serviceBTH.destroy();
         super.onDestroy();
     }
 
@@ -207,6 +236,7 @@ public class MainActivity extends AppCompatActivity
                         }
                     })
                     .show();
+            return;
         }
 
         if(!test.isEnabled())
@@ -244,14 +274,14 @@ public class MainActivity extends AppCompatActivity
     class MyBthService
     {
         private final UUID TARGET_UUID = UUID.fromString("a7bda841-7dbc-4179-9800-1a3eff463f1c");
-        private final int MAX_TRANSACTIONS_PER_CONNECTION = 40;
+        private final int MAX_TRANSACTIONS_PER_CONNECTION = 10;
 
         private BluetoothSocket mySocket;
         private BluetoothAdapter myAdapter;
         private BluetoothDevice targetDevice;
         private BluetoothStatus myStatus = BluetoothStatus.NONE;
 
-        private BroadcastReceiver myReceiver = new BroadcastReceiver() {
+        private BroadcastReceiver myBluetoothStatusReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getAction();
@@ -264,21 +294,28 @@ public class MainActivity extends AppCompatActivity
                         startActivityForResult(enableBTH, 1);
                     }
                 }
-                else if(BluetoothDevice.ACTION_FOUND.equals(action))
-                {
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    if(potentialDevices.size() > 0)
-                    {
-                        for(MyBluetoothDevice d : potentialDevices)
-                        {
-                            if(d.device == device)
-                            {
-                                d.isAlive = true;
-                            }
-                        }
-                    }
-                }
-                else if(BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
+            }
+        };
+        private BroadcastReceiver myReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+//                if(BluetoothDevice.ACTION_FOUND.equals(action))
+//                {
+//                    Log.d("MyBthService", "onReceive: Hello");
+//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+//                    if(potentialDevices.size() > 0)
+//                    {
+//                        for(MyBluetoothDevice d : potentialDevices)
+//                        {
+//                            if(d.device.equals(device))
+//                            {
+//                                d.isAlive = true;
+//                            }
+//                        }
+//                    }
+//                }
+                if(BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
                 {
                     disconnect();
                 }
@@ -286,30 +323,36 @@ public class MainActivity extends AppCompatActivity
                 {
                     disconnect();
                 }
+                else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
+                {
+                    updateStatus(BluetoothStatus.NONE);
+                    findTargetDevice();
+                }
             }
         };
 
-        private ArrayList<MyBluetoothDevice> potentialDevices;
+        private ArrayList<BluetoothDevice> potentialDevices;
 
         private boolean initSuccess = true;
 
-        class MyBluetoothDevice
-        {
-            public BluetoothDevice device;
-            public boolean isAlive = false;
-            MyBluetoothDevice(BluetoothDevice d)
-            {
-                device = d;
-            }
-        }
+//        class MyBluetoothDevice
+//        {
+//            public BluetoothDevice device;
+//            public boolean isAlive = false;
+//            MyBluetoothDevice(BluetoothDevice d)
+//            {
+//                device = d;
+//            }
+//        }
 
         public MyBthService() {
+            registerReceiver(myBluetoothStatusReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
             myAdapter = BluetoothAdapter.getDefaultAdapter();
             updateStatus(BluetoothStatus.NONE);
             updatePotential();
         }
 
-        private void updatePotential()
+        public void updatePotential()
         {
             Set<BluetoothDevice> pairedDevices = myAdapter.getBondedDevices();
             potentialDevices = new ArrayList<>();
@@ -319,7 +362,7 @@ public class MainActivity extends AppCompatActivity
                 {
                     if(device.getBluetoothClass().getMajorDeviceClass() == 256)
                     {
-                        potentialDevices.add(new MyBluetoothDevice(device));
+                        potentialDevices.add(device);
                     }
                 }
                 try
@@ -329,10 +372,11 @@ public class MainActivity extends AppCompatActivity
                 {
                     Log.d("MyBthService", "updatePotential: receiver already unregistered");
                 }
-
-                registerReceiver(myReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-                registerReceiver(myReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-                findTargetDevice();
+                IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+                // filter.addAction(BluetoothDevice.ACTION_FOUND);
+                registerReceiver(myReceiver, filter);
+                updateStatus(BluetoothStatus.SEARCHING);
+                myAdapter.startDiscovery();
             }
             else
             {
@@ -348,16 +392,12 @@ public class MainActivity extends AppCompatActivity
 
         private void findTargetDevice()
         {
-            myAdapter.startDiscovery();
-            for(MyBluetoothDevice d : potentialDevices)
+            for(BluetoothDevice d : potentialDevices)
             {
-                if(d.isAlive)
+                if(testConnection(d))
                 {
-                    if(testConnection(d.device))
-                    {
-                        targetDevice = d.device;
-                        break;
-                    }
+                    targetDevice = d;
+                    break;
                 }
             }
             if(targetDevice == null)
@@ -374,7 +414,6 @@ public class MainActivity extends AppCompatActivity
                 {
                     Log.d("MyBthService", "findTargetDevice: receiver already unregistered");
                 }
-                registerReceiver(myReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
             }
         }
 
@@ -408,9 +447,9 @@ public class MainActivity extends AppCompatActivity
                 Log.d("MyBthService", "connect: receiver already unregistered");
             }
 
-            registerReceiver(myReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-            registerReceiver(myReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED));
-            registerReceiver(myReceiver, new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECTED));
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
+            filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+            registerReceiver(myReceiver, filter);
             updateStatus(BluetoothStatus.CONNECTED);
             return true;
         }
@@ -418,31 +457,40 @@ public class MainActivity extends AppCompatActivity
         public void writeData()
         {
             if(myStatus != BluetoothStatus.CONNECTED) return;
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             for(int i = 0; i < MAX_TRANSACTIONS_PER_CONNECTION; i++)
             {
                 MyMove data = localBuffer.getData();
                 if(data == null) break;
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                outputStream.write(data.MotionType);
-                outputStream.write(data.MotionStatus);
-                outputStream.write(data.data);
-                outputStream.write(10086); // used as data separator and validator
-
-                OutputStream output;
-                try
-                {
-                    output = mySocket.getOutputStream();
-                } catch (IOException e) {
-                    Log.d("MyBthService", "writeData: failed to get output stream from socket");
-                    break;
-                }
-                try
-                {
-                    output.write(outputStream.toByteArray());
-                } catch (IOException e) {
-                    Log.d("MyBthService", "writeData: failed to write to output stream");
-                    break;
-                }
+                ByteBuffer bb = ByteBuffer.allocate(4);
+                bb.putInt(10086);
+                outputStream.write(bb.array(), 0, 4); // used as data separator and validator
+                bb.clear();
+                bb.putInt(data.MotionType);
+                outputStream.write(bb.array(), 0, 4);
+                bb.clear();
+                bb.putInt(data.MotionStatus);
+                outputStream.write(bb.array(), 0, 4);
+                bb.clear();
+                bb.putInt(data.data);
+                outputStream.write(bb.array(), 0, 4);
+            }
+            OutputStream output;
+            try
+            {
+                output = mySocket.getOutputStream();
+            } catch (IOException e) {
+                Log.d("MyBthService", "writeData: failed to get output stream from socket");
+                updateStatus(BluetoothStatus.NONE);
+                return;
+            }
+            try
+            {
+                output.write(outputStream.toByteArray());
+            } catch (IOException e) {
+                Log.d("MyBthService", "writeData: failed to write to output stream");
+                updateStatus(BluetoothStatus.NONE);
+                return;
             }
         }
 
@@ -467,6 +515,18 @@ public class MainActivity extends AppCompatActivity
                 return;
             }
             mySocket = null;
+        }
+
+        public void destroy()
+        {
+            disconnect();
+            try
+            {
+                unregisterReceiver(myBluetoothStatusReceiver);
+            } catch(IllegalArgumentException e)
+            {
+                Log.d("MyBthService", "destroy: receiver already unregistered");
+            }
         }
 
         private boolean testConnection(BluetoothDevice device)
