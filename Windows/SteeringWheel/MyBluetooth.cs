@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using InTheHand.Net.Bluetooth;
 using InTheHand.Net.Sockets;
 
@@ -10,76 +7,82 @@ namespace SteeringWheel
 {
     class MyBluetooth
     {
-        BluetoothDeviceInfo targetDevice;
-        BluetoothClient client;
-        public bool connected = false;
+        private readonly Guid myServiceID;
+        private BluetoothListener myListener;
+        private BluetoothClient sender;
+        public bool isConnected;
+
         public MyBluetooth()
         {
-            Scan();
-            Display();
-            Pair();
-            Connect();
+            myServiceID = new Guid("a7bda841-7dbc-4179-9800-1a3eff463f1c");
+            isConnected = false;
         }
 
-        public void Scan()
+        public void Start()
         {
-            targetDevice = null;
-            client = null;
+            if(myListener != null)
+                myListener.Stop();
+            myListener = new BluetoothListener(myServiceID);
+            myListener.ServiceName = "Android Steering Wheel Host";
+            myListener.Start();
+        }
+
+        public bool Accept()
+        {
             try
             {
-                client = new BluetoothClient();
-            } catch(Exception)
+                sender = myListener.AcceptBluetoothClient();
+            } catch(Exception e)
             {
-                Console.WriteLine("Bluetooth is off");
-                return;
+                Console.WriteLine("Error occured: " + e.Message);
             }
-            BluetoothDeviceInfo[] infos = client.DiscoverDevicesInRange();
-            foreach(BluetoothDeviceInfo info in infos)
+            Console.WriteLine("Device connected");
+            Stream inStream = sender.GetStream();
+
+            while(true)
             {
-                if(info.ClassOfDevice.Device == DeviceClass.SmartPhone)
+                try
                 {
-                    targetDevice = info;
+                    byte[] pack = new byte[800];
+                    int actualLength = inStream.Read(pack, 0, pack.Length);
+                    if (actualLength == 0) return false;
+                    for(int i = 0; i < actualLength; i+=4)
+                    {
+                        byte[] subpack = new byte[4];
+                        Array.Copy(pack, i, subpack, 0, 4);
+                        int? data = DecodeData(subpack);
+                        if (data == null) return false;
+                        if (data == 10086)
+                            Console.WriteLine();
+                        else
+                            Console.Write(data + " + ");
+                    }
+                }
+                catch (IOException)
+                {
+                    Console.WriteLine("Connection is off");
+                    sender.Dispose();
+                    break;
                 }
             }
+
+            return true;
         }
 
-        public void Display()
+        public void Stop()
         {
-            if(targetDevice == null)
-            {
-                Console.WriteLine("No Smart Phone Found in Bluetooth Connection");
-            }
-            else
-            {
-                Console.WriteLine("Device Name: " + targetDevice.DeviceName);
-                Console.WriteLine("Device Mac: " + targetDevice.DeviceAddress.ToString());
-                Console.WriteLine(targetDevice.Authenticated);
-            }
+            if (myListener == null) return;
+            myListener.Server.Dispose();
+            myListener.Stop();
+            myListener = null;
         }
 
-        public void Pair()
+        private int? DecodeData(byte[] array)
         {
-            if (targetDevice == null) return;
-            if(!targetDevice.Authenticated)
-            {
-                bool isPaired = BluetoothSecurity.PairRequest(targetDevice.DeviceAddress, "10086");
-                if(isPaired)
-                {
-                    Console.WriteLine("Deivce Paired");
-                }
-                else
-                {
-                    Console.WriteLine("Device Fail to Pair");
-                }
-            }
-        }
-
-        public void Connect()
-        {
-            if(targetDevice.Authenticated)
-            {
-                client.Connect(new InTheHand.Net.BluetoothEndPoint(targetDevice.DeviceAddress, new Guid("F6F55BAD-DA40-4C94-A0AB-7B62E6475622")));
-            }
+            if (array.Length != 4) return null;
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(array);
+            return BitConverter.ToInt32(array, 0);
         }
     }
 }
