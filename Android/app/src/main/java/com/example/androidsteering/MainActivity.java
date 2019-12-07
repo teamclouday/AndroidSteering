@@ -200,6 +200,8 @@ public class MainActivity extends AppCompatActivity
         serviceSensor.start();
         UIHandler.postDelayed(UIRunner, 0);
         bthHandler.postDelayed(bthRunner, 0);
+        findViewById(R.id.btRetry).setVisibility(View.GONE);
+        findViewById(R.id.textViewBTH).setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -275,6 +277,7 @@ public class MainActivity extends AppCompatActivity
     {
         private final UUID TARGET_UUID = UUID.fromString("a7bda841-7dbc-4179-9800-1a3eff463f1c");
         private final int MAX_TRANSACTIONS_PER_CONNECTION = 10;
+        private final int CONNECTION_SEPERATOR = 0x7FFFFFFF;
 
         private BluetoothSocket mySocket;
         private BluetoothAdapter myAdapter;
@@ -447,6 +450,10 @@ public class MainActivity extends AppCompatActivity
                 Log.d("MyBthService", "connect: receiver already unregistered");
             }
 
+            ByteBuffer buffer = ByteBuffer.allocate(4);
+            buffer.putInt(CONNECTION_SEPERATOR);
+            write(buffer.array());
+
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
             filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
             registerReceiver(myReceiver, filter);
@@ -475,6 +482,11 @@ public class MainActivity extends AppCompatActivity
                 bb.putInt(data.data);
                 outputStream.write(bb.array(), 0, 4);
             }
+            write(outputStream.toByteArray());
+        }
+
+        private void write(byte[] data)
+        {
             OutputStream output;
             try
             {
@@ -486,11 +498,10 @@ public class MainActivity extends AppCompatActivity
             }
             try
             {
-                output.write(outputStream.toByteArray());
+                output.write(data);
             } catch (IOException e) {
                 Log.d("MyBthService", "writeData: failed to write to output stream");
                 updateStatus(BluetoothStatus.NONE);
-                return;
             }
         }
 
@@ -505,6 +516,11 @@ public class MainActivity extends AppCompatActivity
                 Log.d("MyBthService", "disconnect: receiver already unregistered");
             }
             if(mySocket == null) return;
+
+            ByteBuffer buffer = ByteBuffer.allocate(4);
+            buffer.putInt(CONNECTION_SEPERATOR);
+            write(buffer.array());
+
             try
             {
                 mySocket.close();
