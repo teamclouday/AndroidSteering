@@ -665,7 +665,7 @@ public class MainActivity extends AppCompatActivity
             {
                 updateMotionAcc(MotionAcceleration.FORWARD);
             }
-            else if(roll > 5 && roll < 40)
+            else if(roll > 5 && roll < 80)
             {
                 updateMotionAcc(MotionAcceleration.BACKWARD);
             }

@@ -102,8 +102,8 @@ namespace SteeringWheel
         // set range of input values
         private readonly int accForwardRange    = 80 - 25;
         private readonly int accBackwardRange   = 40 - 5;
-        private readonly int steerLeftRange     = 50 - 10;
-        private readonly int steerRightRange    = 50 - 10;
+        private readonly int steerLeftRange     = 40 - 10;
+        private readonly int steerRightRange    = 40 - 10;
 
         public MyWheel()
         {
@@ -278,6 +278,7 @@ namespace SteeringWheel
                         return (int)((val - 25.0) / accForwardRange * axisMax);
                     case 2:
                         // backward
+                        val = Math.Min(val, 40);
                         return (int)((val - 5.0) / accBackwardRange * axisMax);
                     default:
                         // none
@@ -291,11 +292,11 @@ namespace SteeringWheel
                 {
                     case 0:
                         // left
-                        val = Math.Min(val, 50);
+                        val = Math.Min(val, 40);
                         return (int)((1.0 - ((val - 10.0) / steerLeftRange)) * (axisMax / 2));
                     case 2:
                         // right
-                        val = Math.Min(val, 50);
+                        val = Math.Min(val, 40);
                         return (int)((1.0 + ((val - 10.0) / steerRightRange)) * (axisMax / 2));
                     default:
                         // none
