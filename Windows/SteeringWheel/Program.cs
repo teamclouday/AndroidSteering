@@ -32,7 +32,7 @@ namespace SteeringWheel
             bltThread.Start();
             wheelThread.Start();
 
-            while(ProgramRunning)
+            while (ProgramRunning)
             {
                 Thread.Sleep(50);
             }
@@ -49,12 +49,21 @@ namespace SteeringWheel
             {
                 Thread.Sleep(50);
             }
+            bltDevice.Pause();
             bltDevice.Stop();
         }
 
         private static void RunWheelService()
         {
+            wheelDevice.Start();
 
+            while(wheelDevice.okForRunning)
+            {
+                wheelDevice.ProcessData();
+                Thread.Sleep(1);
+            }
+
+            wheelDevice.Stop();
         }
 
         /// <summary>
@@ -88,7 +97,7 @@ namespace SteeringWheel
             uint DllVer = 0, DrvVer = 0;
             if(!joystick.DriverMatch(ref DllVer, ref DrvVer))
             {
-                if (MessageBox.Show("Please make sure the dll version matches the driver version", "Error", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Cancel)
+                if (MessageBox.Show(string.Format("Please make sure the dll version matches the driver version ({0:X} & {1:X})", DllVer, DrvVer), "Error", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Cancel)
                 {
                     Environment.Exit(1);
                 }

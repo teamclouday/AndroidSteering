@@ -20,7 +20,6 @@ namespace SteeringWheel
         private BluetoothListener myListener;
         private BluetoothClient sender;
         public MyBluetoothStatus status;
-        public bool isConnected;
 
         /// <summary>
         /// Constructor, init the server guid
@@ -28,7 +27,6 @@ namespace SteeringWheel
         public MyBluetooth()
         {
             myServiceID = new Guid("a7bda841-7dbc-4179-9800-1a3eff463f1c");
-            isConnected = false;
             status = MyBluetoothStatus.NONE;
         }
 
@@ -128,6 +126,7 @@ namespace SteeringWheel
         private void StartConnection()
         {
             status = MyBluetoothStatus.CONNECTED;
+            Console.WriteLine("Device Connected");
             Stream inStream = sender.GetStream();
             while (okForConnection)
             {
@@ -160,7 +159,7 @@ namespace SteeringWheel
                             }
                             else
                             {
-                                if (pointer != 1 || pointer != 2) break;
+                                if (pointer != 0 && pointer != 1) break;
                                 moveData[pointer] = data;
                                 pointer++;
                             }
@@ -170,9 +169,12 @@ namespace SteeringWheel
                 {
                     break;
                 }
+                System.Threading.Thread.Sleep(1);
             }
-            ENDOFWHILELOOP:
+        ENDOFWHILELOOP:
 
+            Program.globBuffer.Reset();
+            Console.WriteLine("Device Disconnected");
             status = MyBluetoothStatus.LISTENING;
             sender.Dispose();
             sender = null;

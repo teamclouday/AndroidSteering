@@ -614,8 +614,8 @@ public class MainActivity extends AppCompatActivity
         public void start()
         {
             // sample period is set to 10ms
-            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_FASTEST);
-            sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_FASTEST);
+            sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME);
+            sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME);
         }
 
         public void stop()
@@ -744,7 +744,7 @@ public class MainActivity extends AppCompatActivity
 
     class MyMove
     {
-        int MotionType; // 0 for steering, 1 for acceleration
+        int MotionType; // 0 for acceleration, 1 for steering
         int MotionStatus; // positive number for related status
         int data; // moving data
         public MyMove(int type, int status, int d)
