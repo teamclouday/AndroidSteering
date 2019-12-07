@@ -647,11 +647,11 @@ public class MainActivity extends AppCompatActivity
             int roll = (int)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
 
             // update motion steering
-            if(pitch > 15 && pitch < 80)
+            if(pitch > 10 && pitch < 80)
             {
                 updateMotionSteer(MotionSteering.LEFT);
             }
-            else if(pitch < -15 && pitch > -80)
+            else if(pitch < -10 && pitch > -80)
             {
                 updateMotionSteer(MotionSteering.RIGHT);
             }
@@ -665,7 +665,7 @@ public class MainActivity extends AppCompatActivity
             {
                 updateMotionAcc(MotionAcceleration.FORWARD);
             }
-            else if(roll > 10 && roll < 40)
+            else if(roll > 5 && roll < 40)
             {
                 updateMotionAcc(MotionAcceleration.BACKWARD);
             }
