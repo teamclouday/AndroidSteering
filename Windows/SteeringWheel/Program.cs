@@ -10,7 +10,9 @@ namespace SteeringWheel
         public static MyBluetooth bltDevice;
         public static MyWheel wheelDevice;
         public static SetupUI setupUI;
-        public static Thread setupThread; 
+        public static Thread setupThread;
+        public static MonitorUI monitorUI;
+        public static Thread monitorThread;
         public static Thread bltThread;
         public static Thread wheelThread;
         public static Thread trayThread;
@@ -31,6 +33,7 @@ namespace SteeringWheel
             bltDevice = new MyBluetooth();
             wheelDevice = new MyWheel();
             setupUI = new SetupUI();
+            monitorUI = new MonitorUI();
 
             bltThread = new Thread(new ThreadStart(RunBthService));
             wheelThread = new Thread(new ThreadStart(RunWheelService));
@@ -115,6 +118,7 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private static void TrayClickEvent1(object sender, EventArgs e)
         {
+            if (setupThread != null && setupThread.IsAlive) return;
             setupThread = new Thread(
             delegate ()
             {
@@ -125,7 +129,6 @@ namespace SteeringWheel
             }
             );
             setupThread.Start();
-            setupThread.Join();
         }
 
         /// <summary>
@@ -135,7 +138,17 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private static void TrayClickEvent2(object sender, EventArgs e)
         {
-            
+            if (monitorThread != null && monitorThread.IsAlive) return;
+            monitorThread = new Thread(
+            delegate ()
+            {
+                if (monitorUI.IsDisposed)
+                    monitorUI = new MonitorUI();
+                Application.EnableVisualStyles();
+                Application.Run(monitorUI);
+            }
+            );
+            monitorThread.Start();
         }
 
         /// <summary>
@@ -148,6 +161,16 @@ namespace SteeringWheel
             ProgramRunning = false;
             bltDevice.Pause();
             wheelDevice.Pause();
+            if(monitorThread != null && monitorThread.IsAlive)
+            {
+                monitorUI.BeginInvoke(new Action(() => monitorUI.Close()));
+                monitorThread.Join();
+            }
+            if(setupThread != null && setupThread.IsAlive)
+            {
+                setupUI.BeginInvoke(new Action(() => setupUI.Close()));
+                setupThread.Join();
+            }
             Application.Exit();
         }
 

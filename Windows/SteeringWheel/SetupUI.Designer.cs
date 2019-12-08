@@ -324,7 +324,7 @@ namespace SteeringWheel
             this.MaximizeBox = false;
             this.Name = "SetupUI";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Game Controller Setup For Steam";
+            this.Text = "Game Controller Setup";
             ((System.ComponentModel.ISupportInitialize)(this.XboxPicture)).EndInit();
             this.ResumeLayout(false);
 

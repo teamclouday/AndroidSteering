@@ -54,6 +54,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MonitorUI.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MonitorUI.Designer.cs">
+      <DependentUpon>MonitorUI.cs</DependentUpon>
+    </Compile>
     <Compile Include="SetupUI.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -80,6 +86,9 @@
     <Content Include="Resources\gamepad.ico" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="MonitorUI.resx">
+      <DependentUpon>MonitorUI.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="SetupUI.resx">
       <DependentUpon>SetupUI.cs</DependentUpon>
     </EmbeddedResource>
