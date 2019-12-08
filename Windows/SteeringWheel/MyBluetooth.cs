@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using InTheHand.Net.Bluetooth;
 using InTheHand.Net.Sockets;
 
 namespace SteeringWheel
@@ -83,6 +82,7 @@ namespace SteeringWheel
         {
             status = MyBluetoothStatus.NONE;
             if (myListener == null) return;
+            while (myListener.Pending()) { continue; }
             myListener.Server.Dispose();
             myListener.Stop();
             myListener = null;
@@ -97,7 +97,7 @@ namespace SteeringWheel
         {
             if(!okForConnection)
             {
-                ((BluetoothListener)result.AsyncState).EndAcceptBluetoothClient(result);
+                return;
             }
             if(result.IsCompleted)
             {
@@ -126,7 +126,7 @@ namespace SteeringWheel
         private void StartConnection()
         {
             status = MyBluetoothStatus.CONNECTED;
-            Console.WriteLine("Device Connected");
+            // Console.WriteLine("Device Connected");
             Stream inStream = sender.GetStream();
             while (okForConnection)
             {
@@ -174,7 +174,7 @@ namespace SteeringWheel
         ENDOFWHILELOOP:
 
             Program.globBuffer.Reset();
-            Console.WriteLine("Device Disconnected");
+            // Console.WriteLine("Device Disconnected");
             status = MyBluetoothStatus.LISTENING;
             sender.Dispose();
             sender = null;

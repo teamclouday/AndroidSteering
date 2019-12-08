@@ -79,23 +79,28 @@ namespace SteeringWheel
         BACK    = 7,
         START   = 8,
         LS      = 9,
-        RS      = 10
+        RS      = 10,
+        HOME    = 11
     }
 
-    //enum ControlAxis
-    //{
-    //    EMPTY       = 0,
-    //    UP          = 1,
-    //    DOWN        = 2,
-    //    LEFT        = 3,
-    //    RIGHT       = 4
-    //}
+    enum ControlAxis
+    {
+        X,
+        Y,
+        Z,
+        XRot,
+        YRot,
+        ZRot,
+        POVLeft,
+        POVRight,
+        POVUp,
+        POVDown
+    }
 
     class MyWheel
     {
         public bool okForRunning = true;
         private vJoy joystick;
-        // private vJoy.JoystickState report;
         private uint deviceID;
         private long axisMax = 0;
 
@@ -108,10 +113,9 @@ namespace SteeringWheel
         public MyWheel()
         {
             joystick = new vJoy();
-            // report = new vJoy.JoystickState();
             if(!FindTargetDevice())
             {
-                Console.WriteLine("Cannot find a free device for use");
+                // Console.WriteLine("Cannot find a free device for use");
                 okForRunning = false;
             }
         }
@@ -172,7 +176,7 @@ namespace SteeringWheel
                     {
                         deviceID = i;
                         joystick.GetVJDAxisMax(deviceID, HID_USAGES.HID_USAGE_X, ref axisMax);
-                        Console.WriteLine(String.Format("vJoy initialized\nAxis Max: {0}", axisMax));
+                        // Console.WriteLine(String.Format("vJoy initialized\nAxis Max: {0}", axisMax));
                         return true;
                     }
                     else
@@ -191,15 +195,15 @@ namespace SteeringWheel
         /// <returns></returns>
         private bool CheckDeviceSpecs(uint id)
         {
-            bool buttonOK = joystick.GetVJDButtonNumber(id) >= 10;
-            bool contPovOK = joystick.GetVJDContPovNumber(id) >= 1;
+            bool buttonOK = joystick.GetVJDButtonNumber(id) >= 11;
+            bool discPovOK = joystick.GetVJDDiscPovNumber(id) >= 1;
             bool axisXOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_X);
             bool axisYOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_Y);
             bool axisZOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_Z);
             bool axisXrotOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_RX);
             bool axisYrotOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_RY);
             bool axisZrotOK = joystick.GetVJDAxisExist(id, HID_USAGES.HID_USAGE_RZ);
-            bool result = buttonOK && contPovOK &&
+            bool result = buttonOK && discPovOK &&
                           axisXOK && axisYOK && axisZOK &&
                           axisXrotOK && axisYrotOK && axisZrotOK;
             return result;
@@ -210,6 +214,7 @@ namespace SteeringWheel
         /// </summary>
         public void ProcessData()
         {
+            if (!okForRunning) return;
             MyMove nextMove = Program.globBuffer.GetData();
             if (nextMove == null) return;
             int newAxisVal = ConvertAxis(nextMove.data, nextMove.motionType, nextMove.motionStatus);
@@ -222,17 +227,14 @@ namespace SteeringWheel
                 {
                     case 0:
                         // forward
-                        // Console.WriteLine(String.Format("Forward: {0}", nextMove.data));
-                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_Z);
+                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_RZ);
                         break;
                     case 2:
                         // backward
-                        // Console.WriteLine(String.Format("Backward: {0}", nextMove.data));
-                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_Z);
                         break;
                     default:
                         // reset
-                        // Console.WriteLine("ACC NONE");
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Z);
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RZ);
                         break;
@@ -244,16 +246,13 @@ namespace SteeringWheel
                 {
                     case 0:
                         // left
-                        // Console.WriteLine(String.Format("Left: {0}", nextMove.data));
                         joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_X);
                         break;
                     case 2:
                         // right
-                        // Console.WriteLine(String.Format("Right: {0}", nextMove.data));
                         joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_X);
                         break;
                     default:
-                        // Console.WriteLine("STEER NONE");
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_X);
                         break;
                 }
@@ -302,6 +301,73 @@ namespace SteeringWheel
                         // none
                         return 0;
                 }
+            }
+        }
+
+        public void TriggerControl(ControlButton button)
+        {
+            lock(this)
+            {
+                joystick.SetBtn(true, deviceID, (uint)button);
+                System.Threading.Thread.Sleep(50);
+                joystick.SetBtn(false, deviceID, (uint)button);
+            }
+        }
+
+        public void TriggerControl(ControlAxis axis)
+        {
+            lock(this)
+            {
+                switch(axis)
+                {
+                    case ControlAxis.POVUp:
+                        joystick.SetDiscPov(0, deviceID, 1);
+                        System.Threading.Thread.Sleep(50);
+                        break;
+                    case ControlAxis.POVRight:
+                        joystick.SetDiscPov(1, deviceID, 1);
+                        System.Threading.Thread.Sleep(50);
+                        break;
+                    case ControlAxis.POVDown:
+                        joystick.SetDiscPov(2, deviceID, 1);
+                        System.Threading.Thread.Sleep(50);
+                        break;
+                    case ControlAxis.POVLeft:
+                        joystick.SetDiscPov(3, deviceID, 1);
+                        System.Threading.Thread.Sleep(50);
+                        break;
+                    case ControlAxis.X:
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_X);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_X);
+                        break;
+                    case ControlAxis.XRot:
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RX);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RX);
+                        break;
+                    case ControlAxis.Y:
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Y);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_Y);
+                        break;
+                    case ControlAxis.YRot:
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RY);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RY);
+                        break;
+                    case ControlAxis.Z:
+                        joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_Z);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Z);
+                        break;
+                    case ControlAxis.ZRot:
+                        joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        System.Threading.Thread.Sleep(50);
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        break;
+                }
+                joystick.ResetPovs(deviceID);
             }
         }
     }
