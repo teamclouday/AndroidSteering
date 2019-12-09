@@ -2,10 +2,7 @@ package com.example.androidsteering;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
-import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -14,17 +11,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
+// import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,6 +45,22 @@ enum MotionAcceleration
     FORWARD,
     NONE,
     BACKWARD
+}
+
+enum MotionButton
+{
+    X,
+    Y,
+    A,
+    B,
+    LB,
+    RB,
+    UP,
+    DOWN,
+    RIGHT,
+    LEFT,
+    BACK,
+    START
 }
 
 enum BluetoothStatus
@@ -273,6 +285,42 @@ public class MainActivity extends AppCompatActivity
         findViewById(R.id.textViewBTH).setVisibility(View.VISIBLE);
     }
 
+    public void showAllButtons(View view)
+    {
+        if(((Button)view).getText().toString().equals("Show All"))
+        {
+            findViewById(R.id.buttonA).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonB).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonX).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonY).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonLB).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonRB).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonUP).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonDOWN).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonLEFT).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonRIGHT).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonBACK).setVisibility(View.VISIBLE);
+            findViewById(R.id.buttonSTART).setVisibility(View.VISIBLE);
+            ((Button)view).setText(R.string.HideAll);
+        }
+        else
+        {
+            findViewById(R.id.buttonA).setVisibility(View.GONE);
+            findViewById(R.id.buttonB).setVisibility(View.GONE);
+            findViewById(R.id.buttonX).setVisibility(View.GONE);
+            findViewById(R.id.buttonY).setVisibility(View.GONE);
+            findViewById(R.id.buttonLB).setVisibility(View.GONE);
+            findViewById(R.id.buttonRB).setVisibility(View.GONE);
+            findViewById(R.id.buttonUP).setVisibility(View.GONE);
+            findViewById(R.id.buttonDOWN).setVisibility(View.GONE);
+            findViewById(R.id.buttonLEFT).setVisibility(View.GONE);
+            findViewById(R.id.buttonRIGHT).setVisibility(View.GONE);
+            findViewById(R.id.buttonBACK).setVisibility(View.GONE);
+            findViewById(R.id.buttonSTART).setVisibility(View.GONE);
+            ((Button)view).setText(R.string.ShowAll);
+        }
+    }
+
     class MyBthService
     {
         private final UUID TARGET_UUID = UUID.fromString("a7bda841-7dbc-4179-9800-1a3eff463f1c");
@@ -373,7 +421,7 @@ public class MainActivity extends AppCompatActivity
                     unregisterReceiver(myReceiver);
                 } catch(IllegalArgumentException e)
                 {
-                    Log.d("MyBthService", "updatePotential: receiver already unregistered");
+                    // Log.d("MyBthService", "updatePotential: receiver already unregistered");
                 }
                 IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
                 // filter.addAction(BluetoothDevice.ACTION_FOUND);
@@ -415,7 +463,7 @@ public class MainActivity extends AppCompatActivity
                     unregisterReceiver(myReceiver);
                 } catch(IllegalArgumentException e)
                 {
-                    Log.d("MyBthService", "findTargetDevice: receiver already unregistered");
+                    // Log.d("MyBthService", "findTargetDevice: receiver already unregistered");
                 }
             }
         }
@@ -447,7 +495,7 @@ public class MainActivity extends AppCompatActivity
                 unregisterReceiver(myReceiver);
             } catch(IllegalArgumentException e)
             {
-                Log.d("MyBthService", "connect: receiver already unregistered");
+                // Log.d("MyBthService", "connect: receiver already unregistered");
             }
 
             ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -492,7 +540,7 @@ public class MainActivity extends AppCompatActivity
             {
                 output = mySocket.getOutputStream();
             } catch (IOException e) {
-                Log.d("MyBthService", "writeData: failed to get output stream from socket");
+                // Log.d("MyBthService", "writeData: failed to get output stream from socket");
                 updateStatus(BluetoothStatus.NONE);
                 return;
             }
@@ -500,7 +548,7 @@ public class MainActivity extends AppCompatActivity
             {
                 output.write(data);
             } catch (IOException e) {
-                Log.d("MyBthService", "writeData: failed to write to output stream");
+                // Log.d("MyBthService", "writeData: failed to write to output stream");
                 updateStatus(BluetoothStatus.NONE);
             }
         }
@@ -513,7 +561,7 @@ public class MainActivity extends AppCompatActivity
                 unregisterReceiver(myReceiver);
             } catch(IllegalArgumentException e)
             {
-                Log.d("MyBthService", "disconnect: receiver already unregistered");
+                // Log.d("MyBthService", "disconnect: receiver already unregistered");
             }
             if(mySocket == null) return;
 
@@ -526,7 +574,7 @@ public class MainActivity extends AppCompatActivity
                 mySocket.close();
             } catch(IOException e)
             {
-                Log.d("MyBthService", "Cannot close socket");
+                // Log.d("MyBthService", "Cannot close socket");
                 mySocket = null;
                 return;
             }
@@ -541,7 +589,7 @@ public class MainActivity extends AppCompatActivity
                 unregisterReceiver(myBluetoothStatusReceiver);
             } catch(IllegalArgumentException e)
             {
-                Log.d("MyBthService", "destroy: receiver already unregistered");
+                // Log.d("MyBthService", "destroy: receiver already unregistered");
             }
         }
 
@@ -553,7 +601,7 @@ public class MainActivity extends AppCompatActivity
                 tmp = device.createRfcommSocketToServiceRecord(TARGET_UUID);
             } catch(IOException e)
             {
-                Log.d("MyBthService", "Cannot create socket");
+                // Log.d("MyBthService", "Cannot create socket");
                 return false;
             }
             try
@@ -561,7 +609,7 @@ public class MainActivity extends AppCompatActivity
                 tmp.connect();
             } catch(IOException e)
             {
-                Log.d("MyBthService", "Cannot connect to device: " + device.getName());
+                // Log.d("MyBthService", "Cannot connect to device: " + device.getName());
                 return false;
             }
             try
@@ -569,7 +617,7 @@ public class MainActivity extends AppCompatActivity
                 tmp.close();
             } catch(IOException e)
             {
-                Log.d("MyBthService", "Cannot disconnect device: " + device.getName());
+                // Log.d("MyBthService", "Cannot disconnect device: " + device.getName());
                 return false;
             }
             return true;
@@ -647,11 +695,11 @@ public class MainActivity extends AppCompatActivity
             int roll = (int)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
 
             // update motion steering
-            if(pitch > 10 && pitch < 80)
+            if(pitch > 2 && pitch < 85)
             {
                 updateMotionSteer(MotionSteering.LEFT);
             }
-            else if(pitch < -10 && pitch > -80)
+            else if(pitch < -2 && pitch > -85)
             {
                 updateMotionSteer(MotionSteering.RIGHT);
             }
@@ -661,11 +709,11 @@ public class MainActivity extends AppCompatActivity
             }
             updatePitch(pitch);
 
-            if(roll < -25 && roll > -80)
+            if(roll < -5 && roll > -85)
             {
                 updateMotionAcc(MotionAcceleration.FORWARD);
             }
-            else if(roll > 5 && roll < 80)
+            else if(roll > 5 && roll < 85)
             {
                 updateMotionAcc(MotionAcceleration.BACKWARD);
             }
@@ -735,6 +783,13 @@ public class MainActivity extends AppCompatActivity
             buff.add(new MyMove(1, s2.ordinal(), roll));
         }
 
+        public synchronized void addData(MotionButton button)
+        {
+            if(buff.size() >= MAX_SIZE) return;
+            if(serviceBTH == null || serviceBTH.readStatus() != BluetoothStatus.CONNECTED) return;
+            buff.add(new MyMove(2, button.ordinal(), 0));
+        }
+
         public synchronized MyMove getData()
         {
             if(buff.size() <= 0) return null;
@@ -753,5 +808,65 @@ public class MainActivity extends AppCompatActivity
             MotionStatus = status;
             data = d;
         }
+    }
+
+    public void pressX(View view)
+    {
+        localBuffer.addData(MotionButton.X);
+    }
+
+    public void pressY(View view)
+    {
+        localBuffer.addData(MotionButton.Y);
+    }
+
+    public void pressA(View view)
+    {
+        localBuffer.addData(MotionButton.A);
+    }
+
+    public void pressB(View view)
+    {
+        localBuffer.addData(MotionButton.B);
+    }
+
+    public void pressLB(View view)
+    {
+        localBuffer.addData(MotionButton.LB);
+    }
+
+    public void pressRB(View view)
+    {
+        localBuffer.addData(MotionButton.RB);
+    }
+
+    public void pressBACK(View view)
+    {
+        localBuffer.addData(MotionButton.BACK);
+    }
+
+    public void pressSTART(View view)
+    {
+        localBuffer.addData(MotionButton.START);
+    }
+
+    public void pressUP(View view)
+    {
+        localBuffer.addData(MotionButton.UP);
+    }
+
+    public void pressDOWN(View view)
+    {
+        localBuffer.addData(MotionButton.DOWN);
+    }
+
+    public void pressLEFT(View view)
+    {
+        localBuffer.addData(MotionButton.LEFT);
+    }
+
+    public void pressRIGHT(View view)
+    {
+        localBuffer.addData(MotionButton.RIGHT);
     }
 }

@@ -1,4 +1,19 @@
 <resources>
-    <string name="app_name">AndroidSteering</string>
+    <string name="app_name">Wheel</string>
     <string name="title">Android Steering Wheel</string>
+    <string name="RetryButton">Retry Bluetooth</string>
+    <string name="buttonX">X</string>
+    <string name="buttonY">Y</string>
+    <string name="buttonA">A</string>
+    <string name="buttonB">B</string>
+    <string name="buttonLB">LB</string>
+    <string name="buttonRB">RB</string>
+    <string name="buttonSTART">START</string>
+    <string name="buttonBACK">BACK</string>
+    <string name="buttonUP">UP</string>
+    <string name="buttonDOWN">DOWN</string>
+    <string name="buttonLEFT">LEFT</string>
+    <string name="buttonRIGHT">RIGHT</string>
+    <string name="ShowAll">Show All</string>
+    <string name="HideAll">Hide All</string>
 </resources>
