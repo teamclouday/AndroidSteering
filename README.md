@@ -19,6 +19,10 @@ Windows Side:
 6. To monitor the current status or customize motion values, click `Status Monitor`.  
 7. To exit the program completely, click `Exit`   
 
+**Important**  
+Before run, make sure your phone and pc has already been paired before.  
+The program will only scan device from paired list.  
+
 ------
 
 ### DEMOS  
