@@ -20,6 +20,22 @@ namespace SteeringWheel
         BACKWARD
     }
 
+    enum MotionButton
+    {
+        X,
+        Y,
+        A,
+        B,
+        LB,
+        RB,
+        UP,
+        DOWN,
+        RIGHT,
+        LEFT,
+        BACK,
+        START
+    }
+
     /// <summary>
     /// define each move
     /// </summary>
@@ -104,18 +120,24 @@ namespace SteeringWheel
         private uint deviceID;
         private long axisMax = 0;
 
-        // set range of input values
-        private readonly int accForwardRange    = 80 - 25;
-        private readonly int accBackwardRange   = 40 - 5;
-        private readonly int steerLeftRange     = 50 - 10;
-        private readonly int steerRightRange    = 50 - 10;
+        // set default values
+        public static int steerLeftMax = 80;
+        public static int steerRightMax = 80;
+        public static int steerLeftMin = 10;
+        public static int steerRightMin = 10;
+        public static int accForwardMax = 80;
+        public static int accForwardMin = 25;
+        public static int accBackwardMax = 40;
+        public static int accBackwardMin = 5;
+
+        public static bool accInverted = false;
 
         public MyWheel()
         {
             joystick = new vJoy();
             if(!FindTargetDevice())
             {
-                // Console.WriteLine("Cannot find a free device for use");
+                Console.WriteLine("Cannot find a free device for use");
                 okForRunning = false;
             }
         }
@@ -137,6 +159,7 @@ namespace SteeringWheel
             {
                 okForRunning = true;
                 joystick.ResetAll();
+                Program.globBuffer.Reset();
                 ProcessData();
             }
         }
@@ -176,7 +199,7 @@ namespace SteeringWheel
                     {
                         deviceID = i;
                         joystick.GetVJDAxisMax(deviceID, HID_USAGES.HID_USAGE_X, ref axisMax);
-                        // Console.WriteLine(String.Format("vJoy initialized\nAxis Max: {0}", axisMax));
+                        // Console.WriteLine(string.Format("vJoy initialized\nAxis Max: {0}", axisMax));
                         return true;
                     }
                     else
@@ -227,11 +250,19 @@ namespace SteeringWheel
                 {
                     case 0:
                         // forward
-                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        if(accInverted)
+                            joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_Z);
+                        else
+                            joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_RZ);
+
                         break;
                     case 2:
                         // backward
-                        joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_Z);
+                        if(accInverted)
+                            joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        else
+                            joystick.SetAxis(newAxisVal, deviceID, HID_USAGES.HID_USAGE_Z);
+
                         break;
                     default:
                         // reset
@@ -240,7 +271,7 @@ namespace SteeringWheel
                         break;
                 }
             }
-            else
+            else if(nextMove.motionType == 0)
             {
                 switch(nextMove.motionStatus)
                 {
@@ -254,6 +285,48 @@ namespace SteeringWheel
                         break;
                     default:
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_X);
+                        break;
+                }
+            }
+            else
+            {
+                switch((MotionButton)nextMove.motionStatus)
+                {
+                    case MotionButton.A:
+                        TriggerControl(ControlButton.A);
+                        break;
+                    case MotionButton.B:
+                        TriggerControl(ControlButton.B);
+                        break;
+                    case MotionButton.X:
+                        TriggerControl(ControlButton.X);
+                        break;
+                    case MotionButton.Y:
+                        TriggerControl(ControlButton.Y);
+                        break;
+                    case MotionButton.LB:
+                        TriggerControl(ControlButton.LB);
+                        break;
+                    case MotionButton.RB:
+                        TriggerControl(ControlButton.RB);
+                        break;
+                    case MotionButton.START:
+                        TriggerControl(ControlButton.START);
+                        break;
+                    case MotionButton.BACK:
+                        TriggerControl(ControlButton.BACK);
+                        break;
+                    case MotionButton.UP:
+                        TriggerControl(ControlAxis.POVUp);
+                        break;
+                    case MotionButton.DOWN:
+                        TriggerControl(ControlAxis.POVDown);
+                        break;
+                    case MotionButton.LEFT:
+                        TriggerControl(ControlAxis.POVLeft);
+                        break;
+                    case MotionButton.RIGHT:
+                        TriggerControl(ControlAxis.POVRight);
                         break;
                 }
             }
@@ -274,11 +347,14 @@ namespace SteeringWheel
                 {
                     case 0:
                         // forward
-                        return (int)((val - 25.0) / accForwardRange * axisMax);
+                        val = Math.Min(val, accForwardMax);
+                        val = Math.Max(val, accForwardMin);
+                        return (int)((val - accForwardMin) / (accForwardMax - accForwardMin) * axisMax);
                     case 2:
                         // backward
-                        val = Math.Min(val, 40);
-                        return (int)((val - 5.0) / accBackwardRange * axisMax);
+                        val = Math.Min(val, accBackwardMax);
+                        val = Math.Max(val, accBackwardMin);
+                        return (int)((val - accBackwardMin) / (accBackwardMax - accBackwardMin) * axisMax);
                     default:
                         // none
                         return 0;
@@ -291,12 +367,14 @@ namespace SteeringWheel
                 {
                     case 0:
                         // left
-                        val = Math.Min(val, 50);
-                        return (int)((1.0 - ((val - 10.0) / steerLeftRange)) * (axisMax / 2));
+                        val = Math.Min(val, steerLeftMax);
+                        val = Math.Max(val, steerLeftMin);
+                        return (int)((1.0 - ((val - steerLeftMin) / (steerLeftMax - steerLeftMin))) * (axisMax / 2));
                     case 2:
                         // right
-                        val = Math.Min(val, 50);
-                        return (int)((1.0 + ((val - 10.0) / steerRightRange)) * (axisMax / 2));
+                        val = Math.Min(val, steerRightMax);
+                        val = Math.Max(val, steerRightMin);
+                        return (int)((1.0 + ((val - steerRightMin) / (steerRightMax - steerRightMin))) * (axisMax / 2));
                     default:
                         // none
                         return 0;
@@ -338,32 +416,32 @@ namespace SteeringWheel
                         break;
                     case ControlAxis.X:
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_X);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_X);
                         break;
                     case ControlAxis.XRot:
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RX);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RX);
                         break;
                     case ControlAxis.Y:
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Y);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_Y);
                         break;
                     case ControlAxis.YRot:
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RY);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RY);
                         break;
                     case ControlAxis.Z:
                         joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_Z);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Z);
                         break;
                     case ControlAxis.ZRot:
                         joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_RZ);
-                        System.Threading.Thread.Sleep(50);
+                        System.Threading.Thread.Sleep(80);
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RZ);
                         break;
                 }

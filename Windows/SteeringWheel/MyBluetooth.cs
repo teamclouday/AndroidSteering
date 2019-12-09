@@ -51,6 +51,11 @@ namespace SteeringWheel
             {
                 okForConnection = false;
                 status = MyBluetoothStatus.NONE;
+                if(sender != null && sender.Connected)
+                {
+                    sender.Dispose();
+                }
+                myListener.Stop();
             }
         }
 
@@ -63,6 +68,7 @@ namespace SteeringWheel
             {
                 okForConnection = true;
                 status = MyBluetoothStatus.LISTENING;
+                myListener.Start();
             }
             TryAccept();
         }
@@ -82,7 +88,6 @@ namespace SteeringWheel
         {
             status = MyBluetoothStatus.NONE;
             if (myListener == null) return;
-            while (myListener.Pending()) { continue; }
             myListener.Server.Dispose();
             myListener.Stop();
             myListener = null;
@@ -97,6 +102,7 @@ namespace SteeringWheel
         {
             if(!okForConnection)
             {
+                status = MyBluetoothStatus.NONE;
                 return;
             }
             if(result.IsCompleted)
@@ -107,7 +113,6 @@ namespace SteeringWheel
                     if(sender != null)
                     {
                         sender.Dispose();
-                        sender.Close();
                         sender = null;
                     }
                     TryAccept();
@@ -126,7 +131,6 @@ namespace SteeringWheel
         private void StartConnection()
         {
             status = MyBluetoothStatus.CONNECTED;
-            // Console.WriteLine("Device Connected");
             Stream inStream = sender.GetStream();
             while (okForConnection)
             {
@@ -174,12 +178,14 @@ namespace SteeringWheel
         ENDOFWHILELOOP:
 
             Program.globBuffer.Reset();
-            // Console.WriteLine("Device Disconnected");
-            status = MyBluetoothStatus.LISTENING;
             sender.Dispose();
             sender = null;
 
-            TryAccept();
+            if(okForConnection)
+            {
+                status = MyBluetoothStatus.LISTENING;
+                TryAccept();
+            }
         }
 
         /// <summary>
@@ -219,6 +225,27 @@ namespace SteeringWheel
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(array);
             return BitConverter.ToInt32(array, 0);
+        }
+
+        public string[] GetDeviceInfo()
+        {
+            lock(this)
+            {
+                if(sender == null || !sender.Connected)
+                {
+                    return null;
+                }
+                else
+                {
+                    string[] result = new string[5];
+                    result[0] = "Device Name: " + sender.RemoteMachineName;
+                    result[1] = "Device Address: " + sender.RemoteEndPoint.Address.ToString();
+                    result[2] = "Local Address: " + myListener.LocalEndPoint.ToString();
+                    result[3] = "Connection Protocol Type: " + sender.Client.ProtocolType.ToString();
+                    result[4] = "Connection Socket Type: " + sender.Client.SocketType.ToString();
+                    return result;
+                }
+            }
         }
     }
 }
