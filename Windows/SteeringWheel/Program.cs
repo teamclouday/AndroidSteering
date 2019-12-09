@@ -30,8 +30,10 @@ namespace SteeringWheel
                 Thread.Sleep(50);
             }
 
-            bltDevice = new MyBluetooth();
             wheelDevice = new MyWheel();
+            if (!wheelDevice.okForRunning)
+                Environment.Exit(1);
+            bltDevice = new MyBluetooth();
             setupUI = new SetupUI();
             monitorUI = new MonitorUI();
 

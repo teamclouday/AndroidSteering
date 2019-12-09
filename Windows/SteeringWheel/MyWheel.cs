@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using vJoyInterfaceWrap;
 
 // Idea comes from https://github.com/Bemoliph/Virtual-DualShock/blob/master/Gamepad.cs
@@ -137,7 +138,8 @@ namespace SteeringWheel
             joystick = new vJoy();
             if(!FindTargetDevice())
             {
-                Console.WriteLine("Cannot find a free device for use");
+                // Console.WriteLine("Cannot find a free device for use");
+                MessageBox.Show("Please make sure vJoy driver has valid configuration", "No Valid Device Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 okForRunning = false;
             }
         }
