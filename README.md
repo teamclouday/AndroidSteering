@@ -54,3 +54,4 @@ For Windows, I code on Visual Studio 2019 using C#. This is actually related to 
 1. May update the algorithm of Android code, and send less data every second to save more power.  
 2. May develop a Xbox emulator using the same communication approach.  
 3. May learn to add USB protocol as a alternative for Bluetooth.  
+4. May add additional functions to improve the steering stability.  
