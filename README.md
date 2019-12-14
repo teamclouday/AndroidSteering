@@ -27,11 +27,12 @@ The program will only scan device from paired list.
 
 ### DEMOS  
 
-Currently there are no demos, unfortunately.  
-However, this program has been tested on [Assetto Corsa](https://store.steampowered.com/app/244210/Assetto_Corsa/) and [Euro Truck Simulator 2](https://store.steampowered.com/app/227300/Euro_Truck_Simulator_2/).  
+This program has been tested on [Assetto Corsa](https://store.steampowered.com/app/244210/Assetto_Corsa/) and [Euro Truck Simulator 2](https://store.steampowered.com/app/227300/Euro_Truck_Simulator_2/).  
 It works pretty well, by enabling auto-shifting.  
 
-Additional guide to Assetto Corsa. In order to reach perfect experience. Load the Configuration Preset for Xbox Controllers and change steering gamma to 1 (1:1) in advanced setting.  
+* Assetto Corsa [Demo Video](https://www.bilibili.com/video/av79162105/)  
+
+Additional guide to Assetto Corsa. In order to reach perfect experience. Load the Configuration Preset for Xbox Controllers and change steering gamma to 1 (1:1) in the advanced setting.  
 
 ------
 
