@@ -141,11 +141,16 @@ namespace SteeringWheel
                     if (actualLength == 0) break;
                     int[] moveData = new int[2];
                     int pointer = -1;
+                    float specialData = 0.0f;
+                    int data = 0;
                     for (int i = 0; i < actualLength; i += 4)
                     {
                         byte[] subpack = new byte[4];
                         Array.Copy(pack, i, subpack, 0, 4);
-                        int data = DecodeData(subpack);
+                        if (pointer == 2)
+                            specialData = DecodeFloatData(subpack);
+                        else
+                            data = DecodeData(subpack);
                         if (data == seperator)
                         {
                             goto ENDOFWHILELOOP;
@@ -158,7 +163,8 @@ namespace SteeringWheel
                         {
                             if(pointer == 2)
                             {
-                                Program.globBuffer.AddData(moveData[0], moveData[1], data);
+                                Program.globBuffer.AddData(moveData[0], moveData[1], specialData);
+                                specialData = 0.0f;
                                 pointer = -1;
                             }
                             else
@@ -216,7 +222,7 @@ namespace SteeringWheel
         }
 
         /// <summary>
-        /// decode incoming data, 4 byte as an int
+        /// decode incoming data, 4 bytes as an int
         /// </summary>
         /// <param name="array"></param>
         /// <returns></returns>
@@ -227,6 +233,22 @@ namespace SteeringWheel
             return BitConverter.ToInt32(array, 0);
         }
 
+        /// <summary>
+        /// decode 4 bytes as a float
+        /// </summary>
+        /// <param name="array"></param>
+        /// <returns></returns>
+        private float DecodeFloatData(byte[] array)
+        {
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(array);
+            return BitConverter.ToSingle(array, 0);
+        }
+
+        /// <summary>
+        /// get connected device info
+        /// </summary>
+        /// <returns></returns>
         public string[] GetDeviceInfo()
         {
             lock(this)

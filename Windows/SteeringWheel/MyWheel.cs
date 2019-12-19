@@ -44,8 +44,8 @@ namespace SteeringWheel
     {
         public int motionType;
         public int motionStatus;
-        public int data;
-        public MyMove(int type, int status, int d)
+        public float data;
+        public MyMove(int type, int status, float d)
         {
             motionType = type;
             motionStatus = status;
@@ -60,7 +60,7 @@ namespace SteeringWheel
     {
         private Queue<MyMove> buffer = new Queue<MyMove>();
         private const int MAX_SIZE = 50;
-        public void AddData(int type, int status, int d)
+        public void AddData(int type, int status, float d)
         {
             lock(this)
             {
@@ -122,10 +122,10 @@ namespace SteeringWheel
         private long axisMax = 0;
 
         // set default values
-        public static int steerLeftMax = 80;
-        public static int steerRightMax = 80;
-        public static int steerLeftMin = 10;
-        public static int steerRightMin = 10;
+        public static int steerLeftMax = 75;
+        public static int steerRightMax = 75;
+        public static int steerLeftMin = 5;
+        public static int steerRightMin = 5;
         public static int accForwardMax = 80;
         public static int accForwardMin = 25;
         public static int accBackwardMax = 40;
@@ -339,9 +339,9 @@ namespace SteeringWheel
         /// </summary>
         /// <param name="inputAngle"></param>
         /// <returns></returns>
-        private int ConvertAxis(int inputAngle, int type, int status)
+        private int ConvertAxis(float inputAngle, int type, int status)
         {
-            float val = (float)Math.Abs(inputAngle);
+            float val = Math.Abs(inputAngle);
             if(type == 1)
             {
                 // acceleration

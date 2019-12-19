@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -124,7 +125,7 @@ public class MainActivity extends AppCompatActivity
                         motionSteer = "None";
                         break;
                 }
-                motionSteer += "><" + serviceSensor.motionPitch;
+                motionSteer += String.format(Locale.ENGLISH, ">< %.2f", serviceSensor.motionPitch);
                 String motionAcc;
                 switch(serviceSensor.motionAcceleration)
                 {
@@ -138,7 +139,7 @@ public class MainActivity extends AppCompatActivity
                         motionAcc = "None";
                         break;
                 }
-                motionAcc += "><" + serviceSensor.motionRoll;
+                motionAcc += String.format(Locale.ENGLISH, ">< %.2f", serviceSensor.motionRoll);
                 txtViewDebug.setText(String.format("Steering: %s\nAcceleration: %s", motionSteer, motionAcc));
 
                 String bthStatus;
@@ -527,7 +528,7 @@ public class MainActivity extends AppCompatActivity
                 bb.putInt(data.MotionStatus);
                 outputStream.write(bb.array(), 0, 4);
                 bb.clear();
-                bb.putInt(data.data);
+                bb.putFloat(data.data);
                 outputStream.write(bb.array(), 0, 4);
             }
             write(outputStream.toByteArray());
@@ -649,8 +650,8 @@ public class MainActivity extends AppCompatActivity
         private MotionAcceleration motionAcceleration = MotionAcceleration.NONE;
         private MotionSteering motionSteering = MotionSteering.NONE;
 
-        private int motionPitch = 0;
-        private int motionRoll = 0;
+        private float motionPitch = 0.0f;
+        private float motionRoll = 0.0f;
 
         public MySensorService()
         {
@@ -691,15 +692,15 @@ public class MainActivity extends AppCompatActivity
             SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
             SensorManager.getOrientation(rotationMatrix, orientationMatrix);
 
-            int pitch = (int)Math.toDegrees(orientationMatrix[1]);
-            int roll = (int)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
+            float pitch = (float)Math.toDegrees(orientationMatrix[1]);
+            float roll = (float)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
 
             // update motion steering
-            if(pitch > 2 && pitch < 85)
+            if(pitch > 2.0 && pitch < 85.0)
             {
                 updateMotionSteer(MotionSteering.LEFT);
             }
-            else if(pitch < -2 && pitch > -85)
+            else if(pitch < -2.0 && pitch > -85.0)
             {
                 updateMotionSteer(MotionSteering.RIGHT);
             }
@@ -709,11 +710,11 @@ public class MainActivity extends AppCompatActivity
             }
             updatePitch(pitch);
 
-            if(roll < -5 && roll > -85)
+            if(roll < -5.0 && roll > -85.0)
             {
                 updateMotionAcc(MotionAcceleration.FORWARD);
             }
-            else if(roll > 5 && roll < 85)
+            else if(roll > 5.0 && roll < 85.0)
             {
                 updateMotionAcc(MotionAcceleration.BACKWARD);
             }
@@ -746,22 +747,22 @@ public class MainActivity extends AppCompatActivity
             return motionSteering;
         }
 
-        private synchronized void updatePitch(int newPitch)
+        private synchronized void updatePitch(float newPitch)
         {
             motionPitch = newPitch;
         }
 
-        public synchronized int readPitch()
+        public synchronized float readPitch()
         {
             return motionPitch;
         }
 
-        private synchronized void updateRoll(int newRoll)
+        private synchronized void updateRoll(float newRoll)
         {
             motionRoll = newRoll;
         }
 
-        public synchronized int readRoll()
+        public synchronized float readRoll()
         {
             return motionRoll;
         }
@@ -775,7 +776,7 @@ public class MainActivity extends AppCompatActivity
         private final int MAX_SIZE = 50;
         private ArrayList<MyMove> buff = new ArrayList<>();
 
-        public synchronized void addData(MotionSteering s1, MotionAcceleration s2, int pitch, int roll)
+        public synchronized void addData(MotionSteering s1, MotionAcceleration s2, float pitch, float roll)
         {
             if(buff.size() >= MAX_SIZE) return;
             if(serviceBTH == null || serviceBTH.readStatus() != BluetoothStatus.CONNECTED) return;
@@ -787,7 +788,7 @@ public class MainActivity extends AppCompatActivity
         {
             if(buff.size() >= MAX_SIZE) return;
             if(serviceBTH == null || serviceBTH.readStatus() != BluetoothStatus.CONNECTED) return;
-            buff.add(new MyMove(2, button.ordinal(), 0));
+            buff.add(new MyMove(2, button.ordinal(), 0.0f));
         }
 
         public synchronized MyMove getData()
@@ -801,8 +802,8 @@ public class MainActivity extends AppCompatActivity
     {
         int MotionType; // 0 for acceleration, 1 for steering
         int MotionStatus; // positive number for related status
-        int data; // moving data
-        public MyMove(int type, int status, int d)
+        float data; // moving data
+        public MyMove(int type, int status, float d)
         {
             MotionType = type;
             MotionStatus = status;
