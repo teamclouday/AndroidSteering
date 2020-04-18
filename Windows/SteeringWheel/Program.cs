@@ -222,11 +222,12 @@ namespace SteeringWheel
             uint DllVer = 0, DrvVer = 0;
             if(!joystick.DriverMatch(ref DllVer, ref DrvVer))
             {
-                if (MessageBox.Show(string.Format("Please make sure the dll version matches the driver version\nDLL Version: {0:X}\nDriver Version: {1:X}", DllVer, DrvVer), "Error", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Cancel)
-                {
-                    Environment.Exit(1);
-                }
-                return false;
+                MessageBox.Show(string.Format("Different vJoy driver version detected\nDLL Version: {0:X}\nDriver Version: {1:X}", DllVer, DrvVer), "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //if (MessageBox.Show(string.Format("Different vJoy driver version detected\nDLL Version: {0:X}\nDriver Version: {1:X}", DllVer, DrvVer), "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning) == DialogResult.OK)
+                //{
+                //    Environment.Exit(1);
+                //}
+                //return false;
             }
             return true;
         }
