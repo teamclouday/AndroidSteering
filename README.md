@@ -23,7 +23,7 @@ Windows Side:
 **Important**  
 Before run, make sure your phone and pc has already been paired before.  
 The program will only scan device from paired list.  
-On steam controller mapping page, please check `Xbox Configuration Support` and `General Gamepad Configuration Support`  
+On steam controller mapping page, please check `Xbox Configuration Support` and **NOT** `General Gamepad Configuration Support`  
 
 ------
 
