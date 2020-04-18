@@ -4,6 +4,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
@@ -375,11 +376,11 @@ public class MainActivity extends AppCompatActivity
                 {
                     disconnect();
                 }
-                else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
-                {
-                    updateStatus(BluetoothStatus.NONE);
-                    findTargetDevice();
-                }
+//                else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
+//                {
+//                    updateStatus(BluetoothStatus.NONE);
+//                    findTargetDevice();
+//                }
             }
         };
 
@@ -412,7 +413,7 @@ public class MainActivity extends AppCompatActivity
             {
                 for(BluetoothDevice device : pairedDevices)
                 {
-                    if(device.getBluetoothClass().getMajorDeviceClass() == 256)
+                    if(device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.COMPUTER)
                     {
                         potentialDevices.add(device);
                     }
@@ -428,7 +429,8 @@ public class MainActivity extends AppCompatActivity
                 // filter.addAction(BluetoothDevice.ACTION_FOUND);
                 registerReceiver(myReceiver, filter);
                 updateStatus(BluetoothStatus.SEARCHING);
-                myAdapter.startDiscovery();
+                findTargetDevice();
+//                myAdapter.startDiscovery();
             }
             else
             {
@@ -449,6 +451,7 @@ public class MainActivity extends AppCompatActivity
                 if(testConnection(d))
                 {
                     targetDevice = d;
+                    updateStatus(BluetoothStatus.NONE);
                     break;
                 }
             }
