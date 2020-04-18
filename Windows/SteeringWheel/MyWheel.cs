@@ -437,12 +437,16 @@ namespace SteeringWheel
                         joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RY);
                         break;
                     case ControlAxis.Z:
-                        joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_Z);
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Z);
+                        System.Threading.Thread.Sleep(80);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_Z); // Need to be half here
                         System.Threading.Thread.Sleep(80);
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_Z);
                         break;
                     case ControlAxis.ZRot:
-                        joystick.SetAxis((int)axisMax, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RZ);
+                        System.Threading.Thread.Sleep(80);
+                        joystick.SetAxis((int)(axisMax / 2), deviceID, HID_USAGES.HID_USAGE_RZ); // Need to be half here
                         System.Threading.Thread.Sleep(80);
                         joystick.SetAxis(0, deviceID, HID_USAGES.HID_USAGE_RZ);
                         break;

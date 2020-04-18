@@ -29,7 +29,7 @@
     <ProductName>Steering Wheel Service</ProductName>
     <PublisherName>Sida Zhu</PublisherName>
     <SuiteName>Teamclouday</SuiteName>
-    <ApplicationRevision>2</ApplicationRevision>
+    <ApplicationRevision>3</ApplicationRevision>
     <ApplicationVersion>1.1.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
