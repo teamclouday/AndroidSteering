@@ -13,8 +13,8 @@ Android Side:
 Windows Side:  
 1. In order to run properly, need to install vJoy driver (version 2.18). Please go to [this link](https://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.1.8.39-270518/) and download `vJoySetup.exe`. Please check all 4 programs during installation.  
 2. After install, configure the device first. First remove any physical controllers attached to the computer.  
-3. Open `Configure vJoy` and make sure no other program is capturing the controller (like a game or steam). Set Number of Buttons to at least 11. Check all the axes. Choose 4 directions in POV and set number to at least 1. In Axes, check X, Y, Z, RX, RY, RZ.  
-4. Also turn on the bluetooth.  
+3. Open `Configure vJoy` and make sure no other program is capturing the controller (like a game or steam). Set Number of Buttons to at least 11. Check all the axes. Choose 4 directions in POV and set number to at least 1. In Axes, check X, Y, Z, Rx, Ry, Rz. Then restart computer.  
+4. Turn on the bluetooth on both side.  
 5. Start the program, it will show an icon in system tray.  
 6. To setup all buttons for a game (or maybe for steam controller setup), click the `Setup Controller` in the icon menu.  
 7. To monitor the current status or customize motion values, click `Status Monitor`.  
@@ -22,7 +22,7 @@ Windows Side:
 
 **Important**  
 Before run, make sure your phone and pc has already been paired before.  
-The program will only scan device from paired list.  
+The program will only scan devices from paired list.  
 On steam controller mapping page, please check `Xbox Configuration Support` and **NOT** `General Gamepad Configuration Support`  
 
 ------
@@ -58,3 +58,8 @@ For Windows, I code on Visual Studio 2019 using C#. This is actually related to 
 2. May develop a Xbox emulator using the same communication approach.  
 3. May learn to add USB protocol as a alternative for Bluetooth.  
 4. May add additional functions to improve the steering stability.  
+
+------
+
+### vJoy Configuration Screenshot  
+![vjoy configuration](vjoy.png)  
