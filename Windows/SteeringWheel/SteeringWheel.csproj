@@ -26,11 +26,12 @@
     <SupportUrl>https://github.com/teamclouday/AndroidSteering</SupportUrl>
     <ErrorReportUrl>https://github.com/teamclouday/AndroidSteering</ErrorReportUrl>
     <TargetCulture>en-US</TargetCulture>
-    <ProductName>Steering Wheel Service</ProductName>
-    <PublisherName>Sida Zhu</PublisherName>
-    <SuiteName>Teamclouday</SuiteName>
-    <ApplicationRevision>4</ApplicationRevision>
-    <ApplicationVersion>1.1.0.%2a</ApplicationVersion>
+    <ProductName>AndroidSteering</ProductName>
+    <PublisherName>teamclouday</PublisherName>
+    <SuiteName>teamclouday</SuiteName>
+    <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.2.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
