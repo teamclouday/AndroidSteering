@@ -27,8 +27,8 @@
     <ErrorReportUrl>https://github.com/teamclouday/AndroidSteering</ErrorReportUrl>
     <TargetCulture>en-US</TargetCulture>
     <ProductName>AndroidSteering</ProductName>
-    <PublisherName>teamclouday</PublisherName>
-    <SuiteName>teamclouday</SuiteName>
+    <PublisherName>Teamclouday</PublisherName>
+    <SuiteName>Teamclouday</SuiteName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.2.0.%2a</ApplicationVersion>

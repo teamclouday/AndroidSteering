@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Wheel</string>
     <string name="title">Android Steering Wheel</string>
-    <string name="RetryButton">Retry Bluetooth</string>
     <string name="buttonX">X</string>
     <string name="buttonY">Y</string>
     <string name="buttonA">A</string>
@@ -14,6 +13,13 @@
     <string name="buttonDOWN">DOWN</string>
     <string name="buttonLEFT">LEFT</string>
     <string name="buttonRIGHT">RIGHT</string>
-    <string name="ShowAll">Show All</string>
-    <string name="HideAll">Hide All</string>
+
+    <string name="navTitleConnection">Connection Setup</string>
+    <string name="navTitleControl">Control Options</string>
+    <string name="navTitleControlSteer1">Steering (Default)</string>
+    <string name="navTitleControlSteer2">Steering (Alternative)</string>
+    <string name="navTitleControlPad">GamePad</string>
+
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
 </resources>

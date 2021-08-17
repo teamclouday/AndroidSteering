@@ -1,0 +1,21 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_connection_frag"
+            android:title="@string/navTitleConnection"
+            android:icon="@mipmap/ic_launcher_foreground" />
+        <item android:title="@string/navTitleControl">
+            <menu>
+                <group android:checkableBehavior="single">
+                    <item android:title="@string/navTitleControlSteer1"
+                        android:icon="@mipmap/ic_launcher_foreground"/>
+                    <item android:title="@string/navTitleControlSteer2"
+                        android:icon="@mipmap/ic_launcher_foreground"/>
+                    <item android:title="@string/navTitleControlPad"
+                        android:icon="@mipmap/ic_launcher_foreground"/>
+                </group>
+            </menu>
+        </item>
+    </group>
+</menu>
