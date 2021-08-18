@@ -8,11 +8,17 @@
         <item android:title="@string/navTitleControl">
             <menu>
                 <group android:checkableBehavior="single">
-                    <item android:title="@string/navTitleControlSteer1"
+                    <item
+                        android:id="@+id/nav_control_default_frag"
+                        android:title="@string/navTitleControlSteer1"
                         android:icon="@mipmap/ic_launcher_foreground"/>
-                    <item android:title="@string/navTitleControlSteer2"
+                    <item
+                        android:id="@+id/nav_control_alt_frag"
+                        android:title="@string/navTitleControlSteer2"
                         android:icon="@mipmap/ic_launcher_foreground"/>
-                    <item android:title="@string/navTitleControlPad"
+                    <item
+                        android:id="@+id/nav_control_pad_frag"
+                        android:title="@string/navTitleControlPad"
                         android:icon="@mipmap/ic_launcher_foreground"/>
                 </group>
             </menu>

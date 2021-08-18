@@ -14,12 +14,14 @@ import android.content.res.Configuration;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-// import android.util.Log;
+import android.util.Log;
 import android.os.PersistableBundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.navigation.NavigationView;
 
@@ -45,6 +47,8 @@ public class MainActivity extends AppCompatActivity
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         // keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // set default fragment
+        setFragment(R.id.nav_connection_frag);
         // set action bar
         toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.navTitleConnection);
@@ -77,10 +81,47 @@ public class MainActivity extends AppCompatActivity
 
     public void selectDrawerItem(MenuItem menuItem)
     {
-
+        setFragment(menuItem.getItemId());
         menuItem.setChecked(true);
         toolbar.setTitle(menuItem.getTitle());
         mDrawer.closeDrawers();
+    }
+
+    public void setFragment(int fragmentId)
+    {
+        Fragment fragment;
+        try{
+            if(fragmentId == R.id.nav_connection_frag)
+            {
+                fragment = FragmentConnection.class.newInstance();
+            }
+            else if(fragmentId == R.id.nav_control_default_frag)
+            {
+                fragment = FragmentControlDefault.class.newInstance();
+            }
+            else if(fragmentId == R.id.nav_control_alt_frag)
+            {
+                fragment = FragmentControlAlter.class.newInstance();
+            }
+            else if(fragmentId == R.id.nav_control_pad_frag)
+            {
+                fragment = FragmentControlPad.class.newInstance();
+            }
+            else
+            {
+                fragment = FragmentConnection.class.newInstance();
+            }
+
+        } catch(Exception e)
+        {
+            Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
+            return;
+        }
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.flContent, fragment)
+                .commit();
     }
 
     @Override

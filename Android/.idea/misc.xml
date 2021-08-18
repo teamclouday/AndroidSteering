@@ -5,6 +5,10 @@
       <map>
         <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.5546875" />
         <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/drawable/ic_launcher_background.xml" value="0.5546875" />
+        <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/frag_connection.xml" value="0.525" />
+        <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/frag_control_alter.xml" value="0.5385416666666667" />
+        <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/frag_control_default.xml" value="0.5385416666666667" />
+        <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/frag_control_pad.xml" value="0.5385416666666667" />
         <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/main.xml" value="0.5385416666666667" />
         <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/nav_header.xml" value="0.5" />
         <entry key="..\:/Code/Projects/AndroidSteering/Android/app/src/main/res/layout/toolbar.xml" value="0.3182291666666667" />
