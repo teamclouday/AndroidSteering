@@ -7,20 +7,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-
-enum MotionSteering
-{
-    LEFT,
-    NONE,
-    RIGHT
-}
-
-enum MotionAcceleration
-{
-    FORWARD,
-    NONE,
-    BACKWARD
-}
+import android.util.Log;
 
 enum MotionButton
 {
@@ -53,32 +40,32 @@ public class Motion implements SensorEventListener
         }
     }
 
-    private SensorManager sensorManager;
+    private final SensorManager sensorManager;
 
-    private Sensor accSensor;
-    private Sensor magSensor;
+    private final Sensor accSensor;
+    private final Sensor magSensor;
 
-    private Context activityContext;
+    private final MainActivity mainActivity;
+    private final Connection.MyBuffer globalBuffer;
 
     private final float[] accReading = new float[3];
     private final float[] magReading = new float[3];
     private final float[] rotationMatrix = new float[9];
     private final float[] orientationMatrix = new float[3];
 
-    private MotionAcceleration motionAcceleration = MotionAcceleration.NONE;
-    private MotionSteering motionSteering = MotionSteering.NONE;
-
     private float motionPitch = 0.0f;
     private float motionRoll = 0.0f;
 
-    public Motion(Context context)
+    public Motion(MainActivity activity, Connection.MyBuffer buffer)
     {
-        activityContext = context;
-        sensorManager = (SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
+        mainActivity = activity;
+        globalBuffer = buffer;
+        sensorManager = (SensorManager)mainActivity.getSystemService(Context.SENSOR_SERVICE);
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
+    // start sensor callback
     public void start()
     {
         // sample period is set to 10ms
@@ -86,6 +73,7 @@ public class Motion implements SensorEventListener
         sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME);
     }
 
+    // stop sensor callback
     public void stop()
     {
         sensorManager.unregisterListener(this);
@@ -106,6 +94,7 @@ public class Motion implements SensorEventListener
         }
     }
 
+    // update current pitch roll
     private void update()
     {
         SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
@@ -114,73 +103,33 @@ public class Motion implements SensorEventListener
         float pitch = (float)Math.toDegrees(orientationMatrix[1]);
         float roll = (float)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
 
-        // update motion steering
-        if(pitch > 2.0 && pitch < 85.0)
-        {
-            updateMotionSteer(MotionSteering.LEFT);
-        }
-        else if(pitch < -2.0 && pitch > -85.0)
-        {
-            updateMotionSteer(MotionSteering.RIGHT);
-        }
-        else
-        {
-            updateMotionSteer(MotionSteering.NONE);
-        }
         updatePitch(pitch);
-
-        if(roll < -5.0 && roll > -85.0)
-        {
-            updateMotionAcc(MotionAcceleration.FORWARD);
-        }
-        else if(roll > 5.0 && roll < 85.0)
-        {
-            updateMotionAcc(MotionAcceleration.BACKWARD);
-        }
-        else
-        {
-            updateMotionAcc(MotionAcceleration.NONE);
-        }
         updateRoll(roll);
 
-        Connection.buffer.addData(readMotionSteer(), readMotionAcc(), readPitch(), readRoll());
+        Log.d(mainActivity.getString(R.string.logTagMotion), "(Pitch, Roll) = (" + motionPitch + ", " + motionRoll + ")");
+
+        globalBuffer.addData(readPitch(), readRoll());
     }
 
-    private synchronized void updateMotionAcc(MotionAcceleration newState)
-    {
-        motionAcceleration = newState;
-    }
-
-    public synchronized MotionAcceleration readMotionAcc()
-    {
-        return motionAcceleration;
-    }
-
-    private synchronized void updateMotionSteer(MotionSteering newState)
-    {
-        motionSteering = newState;
-    }
-
-    public synchronized MotionSteering readMotionSteer()
-    {
-        return motionSteering;
-    }
-
+    // update pitch
     private synchronized void updatePitch(float newPitch)
     {
         motionPitch = newPitch;
     }
 
+    // read pitch
     public synchronized float readPitch()
     {
         return motionPitch;
     }
 
+    // update roll
     private synchronized void updateRoll(float newRoll)
     {
         motionRoll = newRoll;
     }
 
+    // read roll
     public synchronized float readRoll()
     {
         return motionRoll;
@@ -188,5 +137,4 @@ public class Motion implements SensorEventListener
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {}
-
 }

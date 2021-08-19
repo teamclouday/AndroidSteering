@@ -1,7 +1,6 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -41,7 +40,7 @@
             android:id="@+id/radioButtonBth"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:checked="true"
+            android:checked="false"
             android:minHeight="48dp"
             android:padding="5dp"
             android:text="@string/radioButtonBluetooth"
@@ -65,6 +64,7 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
+        android:onClick="connectionButtonOnClick"
         android:text="@string/buttonConnect"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="parent"

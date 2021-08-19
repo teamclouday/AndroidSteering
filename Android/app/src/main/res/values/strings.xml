@@ -33,6 +33,7 @@
     <string name="radioButtonWifi">Wifi</string>
     <string name="radioButtonTitle">Connection Type</string>
     <string name="buttonConnect">Connect</string>
+    <string name="buttonDisconnect">Disconnect</string>
 
     <string name="controlSteeringTitle">Steering Control</string>
     <string name="controlSteeringAngleHorizontal">Horizontal Angle</string>

@@ -10,41 +10,46 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.widget.Toast;
+import android.os.Process;
+import android.util.Log;
+import android.widget.RadioGroup;
 
-import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-enum BluetoothStatus
+enum ConnectionMode
 {
-    NONE,
-    SEARCHING,
-    CONNECTED
+    Bluetooth,
+    Wifi
 }
 
 public class Connection
 {
-    class MyBuffer
+    static class MyBuffer
     {
         private final int MAX_SIZE = 50;
-        private ArrayList<Motion.MyMove> buff = new ArrayList<>();
+        private final ArrayList<Motion.MyMove> buff = new ArrayList<>();
+        private boolean running = false;
 
-        public synchronized void addData(MotionSteering s1, MotionAcceleration s2, float pitch, float roll)
+        public synchronized void addData(float pitch, float roll)
         {
-            if(buff.size() >= MAX_SIZE) return;
-            buff.add(new Motion.MyMove(0, s1.ordinal(), pitch));
-            buff.add(new Motion.MyMove(1, s2.ordinal(), roll));
+            if(!running) return;
+            buff.add(new Motion.MyMove(0, 0, pitch));
+            buff.add(new Motion.MyMove(0, 1, roll));
+            while(buff.size() > MAX_SIZE)
+                buff.remove(0);
         }
 
         public synchronized void addData(MotionButton button)
         {
-            if(buff.size() >= MAX_SIZE) return;
-            buff.add(new Motion.MyMove(2, button.ordinal(), 0.0f));
+            if(!running) return;
+            buff.add(new Motion.MyMove(1, button.ordinal(), 0.0f));
+            while(buff.size() > MAX_SIZE)
+                buff.remove(0);
         }
 
         public synchronized Motion.MyMove getData()
@@ -52,285 +57,193 @@ public class Connection
             if(buff.size() <= 0) return null;
             return buff.remove(0);
         }
+
+        public synchronized void turnOn(){running = true;}
+        public synchronized void turnOff(){running = false;}
     }
 
-    static MyBuffer buffer;
+    private final MyBuffer globalBuffer;
 
     private final UUID TARGET_UUID = UUID.fromString("a7bda841-7dbc-4179-9800-1a3eff463f1c");
-    private final int MAX_TRANSACTIONS_PER_CONNECTION = 10;
-    private final int CONNECTION_SEPERATOR = 0x7FFFFFFF;
+    private final int DEVICE_CHECK_DATA = 123456;
+    private final int DEVICE_CHECK_EXPECTED = 654321;
+    private final long MAX_WAIT_TIME = 1500L;
 
-    private Context activityContext;
+    private final MainActivity mainActivity;
 
-    private BluetoothSocket mySocket;
-    private BluetoothAdapter myAdapter;
-    private BluetoothDevice targetDevice;
-    private BluetoothStatus myStatus = BluetoothStatus.NONE;
+    public boolean connected = false;
+    public ConnectionMode connectionMode = ConnectionMode.Bluetooth;
+    private boolean running = false;
 
-    private BroadcastReceiver myBluetoothStatusReceiver = new BroadcastReceiver() {
+    // bluetooth components
+    private final BluetoothAdapter bthAdapter;
+    private BluetoothSocket bthSocket;
+    private final BroadcastReceiver bthReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if(BluetoothAdapter.ACTION_STATE_CHANGED.equals(action))
             {
-                if(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1) == BluetoothAdapter.STATE_OFF)
+                if(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR) == BluetoothAdapter.STATE_TURNING_OFF)
                 {
                     disconnect();
                 }
             }
+            else if(BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action) ||
+                    BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED.equals(action))
+                disconnect();
         }
     };
+    private Thread bthThread;
 
-    private BroadcastReceiver myReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-//                if(BluetoothDevice.ACTION_FOUND.equals(action))
-//                {
-//                    Log.d("MyBthService", "onReceive: Hello");
-//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                    if(potentialDevices.size() > 0)
-//                    {
-//                        for(MyBluetoothDevice d : potentialDevices)
-//                        {
-//                            if(d.device.equals(device))
-//                            {
-//                                d.isAlive = true;
-//                            }
-//                        }
-//                    }
-//                }
-            if(BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action))
-            {
-                disconnect();
-            }
-            else if(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED.equals(action))
-            {
-                disconnect();
-            }
-//                else if(BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action))
-//                {
-//                    updateStatus(BluetoothStatus.NONE);
-//                    findTargetDevice();
-//                }
-        }
-    };
-
-    private ArrayList<BluetoothDevice> potentialDevices;
-
-    private boolean initSuccess = true;
-
-//        class MyBluetoothDevice
-//        {
-//            public BluetoothDevice device;
-//            public boolean isAlive = false;
-//            MyBluetoothDevice(BluetoothDevice d)
-//            {
-//                device = d;
-//            }
-//        }
-
-    public Connection(Context context)
+    public Connection(MainActivity activity, MyBuffer buffer)
     {
-        activityContext = context;
-        activityContext.registerReceiver(myBluetoothStatusReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-        myAdapter = BluetoothAdapter.getDefaultAdapter();
-        updateStatus(BluetoothStatus.NONE);
-        updatePotential();
+        mainActivity = activity;
+        globalBuffer = buffer;
+        bthAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
-    public void updatePotential()
+    // general connect
+    public String connect()
     {
-        Set<BluetoothDevice> pairedDevices = myAdapter.getBondedDevices();
-        potentialDevices = new ArrayList<>();
-        if (pairedDevices.size() > 0)
+        if(connected) disconnect();
+        if(connectionMode == ConnectionMode.Bluetooth) return connectBluetooth();
+        else return connectWifi();
+    }
+
+    // connect to bluetooth
+    private String connectBluetooth()
+    {
+        // register receiver
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
+        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
+        mainActivity.registerReceiver(bthReceiver, filter);
+        // select target device
+        BluetoothDevice bthDevice = null;
+        for(BluetoothDevice device : bthAdapter.getBondedDevices())
         {
-            for(BluetoothDevice device : pairedDevices)
+            if(device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.COMPUTER)
             {
-                if(device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.COMPUTER)
+                if(testConnection(device))
                 {
-                    potentialDevices.add(device);
+                    bthDevice = device;
+                    break;
                 }
             }
-            try
-            {
-                activityContext.unregisterReceiver(myReceiver);
-            } catch(IllegalArgumentException e)
-            {
-                // Log.d("MyBthService", "updatePotential: receiver already unregistered");
-            }
-            IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-            // filter.addAction(BluetoothDevice.ACTION_FOUND);
-            activityContext.registerReceiver(myReceiver, filter);
-            updateStatus(BluetoothStatus.SEARCHING);
-            findTargetDevice();
-//                myAdapter.startDiscovery();
         }
-        else
-        {
-            Toast.makeText(activityContext, "Please pair a computer and try again", Toast.LENGTH_LONG).show();
-            initSuccess = false;
-        }
-    }
-
-    public boolean isCreated()
-    {
-        return initSuccess;
-    }
-
-    private void findTargetDevice()
-    {
-        for(BluetoothDevice d : potentialDevices)
-        {
-            if(testConnection(d))
-            {
-                targetDevice = d;
-                updateStatus(BluetoothStatus.NONE);
-                break;
-            }
-        }
-        if(targetDevice == null)
-        {
-            Toast.makeText(activityContext, "None of the computers can be connected\nPlease check the receiver on computer", Toast.LENGTH_LONG).show();
-            initSuccess = false;
-        }
-        else
-        {
-            try
-            {
-                activityContext.unregisterReceiver(myReceiver);
-            } catch(IllegalArgumentException e)
-            {
-                // Log.d("MyBthService", "findTargetDevice: receiver already unregistered");
-            }
-        }
-    }
-
-    public boolean connect()
-    {
-        if(targetDevice == null) return false;
-        if(mySocket != null) disconnect();
-        try
-        {
-            mySocket = targetDevice.createInsecureRfcommSocketToServiceRecord(TARGET_UUID);
+        // create connection
+        if(bthDevice == null) return "Failed to find target bluetooth PC";
+        if(bthSocket != null || bthThread != null) disconnect();
+        try {
+            bthSocket = bthDevice.createInsecureRfcommSocketToServiceRecord(TARGET_UUID);
         } catch(IOException e)
         {
-            Toast.makeText(activityContext, "Failed to connect device: " + targetDevice.getName(), Toast.LENGTH_LONG).show();
-            mySocket = null;
-            return false;
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectBluetooth] Cannot create socket -> " + e.getMessage());
+            bthSocket = null;
+            return "Failed to init bluetooth";
         }
-        try
+        try{
+            bthSocket.connect();
+        }catch(IOException e)
         {
-            mySocket.connect();
-        } catch(IOException e)
-        {
-            Toast.makeText(activityContext, "Failed to connect device: " + targetDevice.getName(), Toast.LENGTH_LONG).show();
-            mySocket = null;
-            return false;
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectBluetooth] Cannot connect socket -> " + e.getMessage());
+            bthSocket = null;
+            return "Failed to connect bluetooth";
         }
-        try
-        {
-            activityContext.unregisterReceiver(myReceiver);
-        } catch(IllegalArgumentException e)
-        {
-            // Log.d("MyBthService", "connect: receiver already unregistered");
-        }
-
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(CONNECTION_SEPERATOR);
-        write(buffer.array());
-
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
-        filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
-        activityContext.registerReceiver(myReceiver, filter);
-        updateStatus(BluetoothStatus.CONNECTED);
-        return true;
+        connected = true;
+        // start thread loop
+        bthThread = new Thread(() -> {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+            try
+            {
+                DataOutputStream streamOut = new DataOutputStream(bthSocket.getOutputStream());
+                while(running)
+                {
+                    Motion.MyMove data = globalBuffer.getData();
+                    if(data == null)
+                    {
+                        try{
+                            Thread.sleep(50);
+                        }catch(InterruptedException e){}
+                        continue;
+                    }
+                    streamOut.writeInt(10086);
+                    streamOut.writeInt(data.MotionType);
+                    streamOut.writeInt(data.MotionStatus);
+                    streamOut.writeFloat(data.data);
+                }
+                streamOut.close();
+            }catch(IOException e)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[bthThread] -> " + e.getMessage());
+            }finally{
+                connected = false;
+                unlockRadioGroup();
+            }
+        });
+        running = true;
+        bthThread.start();
+        return "";
     }
 
-    public void writeData()
+    // connect to wifi
+    private String connectWifi()
     {
-        if(myStatus != BluetoothStatus.CONNECTED) return;
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        for(int i = 0; i < MAX_TRANSACTIONS_PER_CONNECTION; i++)
-        {
-            Motion.MyMove data = buffer.getData();
-            if(data == null) break;
-            ByteBuffer bb = ByteBuffer.allocate(4);
-            bb.putInt(10086);
-            outputStream.write(bb.array(), 0, 4); // used as data separator and validator
-            bb.clear();
-            bb.putInt(data.MotionType);
-            outputStream.write(bb.array(), 0, 4);
-            bb.clear();
-            bb.putInt(data.MotionStatus);
-            outputStream.write(bb.array(), 0, 4);
-            bb.clear();
-            bb.putFloat(data.data);
-            outputStream.write(bb.array(), 0, 4);
-        }
-        write(outputStream.toByteArray());
+        return "";
     }
 
-    private void write(byte[] data)
-    {
-        OutputStream output;
-        try
-        {
-            output = mySocket.getOutputStream();
-        } catch (IOException e) {
-            // Log.d("MyBthService", "writeData: failed to get output stream from socket");
-            updateStatus(BluetoothStatus.NONE);
-            return;
-        }
-        try
-        {
-            output.write(data);
-        } catch (IOException e) {
-            // Log.d("MyBthService", "writeData: failed to write to output stream");
-            updateStatus(BluetoothStatus.NONE);
-        }
-    }
-
+    // disconnect
     public void disconnect()
     {
-        updateStatus(BluetoothStatus.NONE);
-        try
+        if(connectionMode == ConnectionMode.Bluetooth)
         {
-            activityContext.unregisterReceiver(myReceiver);
-        } catch(IllegalArgumentException e)
-        {
-            // Log.d("MyBthService", "disconnect: receiver already unregistered");
+            if(bthThread != null)
+            {
+                running = false;
+                try{
+                    bthThread.join(MAX_WAIT_TIME);
+                }catch(InterruptedException e)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[disconnect](bluetooth) Thread stopped -> " + e.getMessage());
+                }finally {
+                    bthThread = null;
+                }
+            }
+            if(bthSocket != null)
+            {
+                try{
+                    bthSocket.close();
+                }catch(IOException e)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[disconnect](bluetooth) Cannot close socket -> " + e.getMessage());
+                }finally {
+                    bthSocket = null;
+                }
+            }
         }
-        if(mySocket == null) return;
-
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        buffer.putInt(CONNECTION_SEPERATOR);
-        write(buffer.array());
-
-        try
+        else if(connectionMode == ConnectionMode.Wifi)
         {
-            mySocket.close();
-        } catch(IOException e)
-        {
-            // Log.d("MyBthService", "Cannot close socket");
-            mySocket = null;
-            return;
+
         }
-        mySocket = null;
+        connected = false;
+        unlockRadioGroup();
     }
 
-    public void destroy()
+    private void unlockRadioGroup()
     {
-        disconnect();
-        try
-        {
-            activityContext.unregisterReceiver(myBluetoothStatusReceiver);
-        } catch(IllegalArgumentException e)
-        {
-            // Log.d("MyBthService", "destroy: receiver already unregistered");
-        }
+        mainActivity.runOnUiThread(() -> {
+            try{
+                RadioGroup group = mainActivity.findViewById(R.id.radioGroup);
+                group.setEnabled(true);
+            }catch(Exception e)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[unlockRadioGroup] -> " + e.getMessage());
+            }
+        });
     }
 
+    // test bluetooth device
     private boolean testConnection(BluetoothDevice device)
     {
         BluetoothSocket tmp;
@@ -339,7 +252,7 @@ public class Connection
             tmp = device.createRfcommSocketToServiceRecord(TARGET_UUID);
         } catch(IOException e)
         {
-            // Log.d("MyBthService", "Cannot create socket");
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) Cannot create socket");
             return false;
         }
         try
@@ -347,27 +260,52 @@ public class Connection
             tmp.connect();
         } catch(IOException e)
         {
-            // Log.d("MyBthService", "Cannot connect to device: " + device.getName());
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) Cannot connect to device: " + device.getName());
             return false;
         }
+        AtomicBoolean isValid = new AtomicBoolean(false);
+        Thread validationThread = new Thread(() -> {
+            try
+            {
+                DataOutputStream streamOut = new DataOutputStream(tmp.getOutputStream());
+                streamOut.writeInt(DEVICE_CHECK_DATA);
+                streamOut.flush();
+                DataInputStream streamIn = new DataInputStream(tmp.getInputStream());
+                if(streamIn.readInt() == DEVICE_CHECK_EXPECTED) isValid.set(true);
+            }catch(Exception e)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) validationThread -> " + e.getMessage());
+            }
+        });
         try
         {
-            tmp.close();
-        } catch(IOException e)
+            validationThread.start();
+            validationThread.join(MAX_WAIT_TIME);
+            if(validationThread.isAlive())
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) validationThread exceeds max timeout");
+                try{tmp.close();}
+                catch(Exception any)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) -> " + any.getMessage());
+                }
+                return false;
+            }
+        }catch(InterruptedException e)
         {
-            // Log.d("MyBthService", "Cannot disconnect device: " + device.getName());
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) validationThread exceeds max timeout -> " + e.getMessage());
+            try{tmp.close();}
+            catch(Exception any)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) -> " + any.getMessage());
+            }
             return false;
         }
+        try{tmp.close();}
+        catch(Exception any)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) -> " + any.getMessage());
+        }
         return true;
-    }
-
-    private synchronized void updateStatus(BluetoothStatus newStatus)
-    {
-        myStatus = newStatus;
-    }
-
-    public synchronized BluetoothStatus readStatus()
-    {
-        return myStatus;
     }
 }

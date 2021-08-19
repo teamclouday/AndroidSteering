@@ -21,5 +21,17 @@ public class FragmentControlAlter extends Fragment
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState)
     {
         super.onViewCreated(view, savedInstanceState);
+        MainActivity activity = (MainActivity)getActivity();
+        assert activity != null;
+        activity.startUpdatingUIDigits();
+    }
+
+    @Override
+    public void onDestroyView()
+    {
+        super.onDestroyView();
+        MainActivity activity = (MainActivity)getActivity();
+        assert activity != null;
+        activity.stopUpdatingUIDigits();
     }
 }
