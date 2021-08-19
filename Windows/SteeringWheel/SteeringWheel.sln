@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
-VisualStudioVersion = 16.0.29519.87
+VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteeringWheel", "SteeringWheel.csproj", "{F6F55BAD-DA40-4C94-A0AB-7B62E6475622}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteeringWheel", "SteeringWheel.csproj", "{FEB8DF6E-8AFF-4847-8819-345CF74B51B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F6F55BAD-DA40-4C94-A0AB-7B62E6475622}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F6F55BAD-DA40-4C94-A0AB-7B62E6475622}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F6F55BAD-DA40-4C94-A0AB-7B62E6475622}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F6F55BAD-DA40-4C94-A0AB-7B62E6475622}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FEB8DF6E-8AFF-4847-8819-345CF74B51B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FEB8DF6E-8AFF-4847-8819-345CF74B51B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FEB8DF6E-8AFF-4847-8819-345CF74B51B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FEB8DF6E-8AFF-4847-8819-345CF74B51B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {7E7B9049-DA1D-4B21-8F36-7EDECD45DAE3}
+		SolutionGuid = {69B4C9A7-7FD3-4686-A13A-D44555D35D78}
 	EndGlobalSection
 EndGlobal
