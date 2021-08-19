@@ -5,8 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SteeringWheel"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        ResizeMode="CanMinimize"
+        Background="LightSkyBlue"
+        Title="Android Steering Wheel" Height="600" Width="800">
     <Grid>
-
+        <StackPanel HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="100" Margin="50,50,0,0">
+            <Label>Connection Mode</Label>
+            <RadioButton GroupName="connection" IsChecked="True">Bluetooth</RadioButton>
+            <RadioButton GroupName="connection">Wifi Hotspot</RadioButton>
+        </StackPanel>
     </Grid>
 </Window>
