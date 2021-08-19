@@ -11,30 +11,34 @@ import android.util.Log;
 
 enum MotionButton
 {
-    X,
-    Y,
-    A,
-    B,
-    LB,
-    RB,
-    UP,
-    DOWN,
-    RIGHT,
-    LEFT,
-    BACK,
-    START
+    X(0),
+    Y(1),
+    A(2),
+    B(3),
+    LB(4),
+    RB(5),
+    UP(6),
+    DOWN(7),
+    RIGHT(8),
+    LEFT(9),
+    BACK(10),
+    START(11);
+
+    private final int val;
+    MotionButton(int v){val = v;}
+    public int getVal(){return val;}
 }
 
 public class Motion implements SensorEventListener
 {
     static class MyMove
     {
-        int MotionType; // 0 for acceleration, 1 for steering
+        boolean MotionButton; // is it a button motion?
         int MotionStatus; // positive number for related status
         float data; // moving data
-        public MyMove(int type, int status, float d)
+        public MyMove(boolean type, int status, float d)
         {
-            MotionType = type;
+            MotionButton = type;
             MotionStatus = status;
             data = d;
         }

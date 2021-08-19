@@ -10,7 +10,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
@@ -19,10 +18,10 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.Settings;
 import android.util.Log;
 import android.os.PersistableBundle;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -48,9 +47,34 @@ public class MainActivity extends AppCompatActivity
 
     private Motion serviceMotion;
     private Connection serviceConnection;
+    private Thread threadConnect;
+    private Thread threadDisconnect;
 
+    private boolean controlFragment = false;
     private final Handler handlerUpdateUI = new Handler(Looper.getMainLooper());
-    private Runnable runnableUpdateUI;
+    private final Runnable runnableUpdateUI = new Runnable() {
+        @SuppressLint("DefaultLocale")
+        @Override
+        public void run()
+        {
+            try {
+                if(controlFragment)
+                {
+                    TextView vHorizontal = findViewById(R.id.textViewAngleHori);
+                    TextView vVertical = findViewById(R.id.textViewAngleVert);
+                    vHorizontal.setText(String.format("%5.0f", serviceMotion.readRoll()));
+                    vVertical.setText(String.format("%5.0f", serviceMotion.readPitch()));
+                }
+            }
+            catch(Exception e)
+            {
+                Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
+            }
+            finally {
+                handlerUpdateUI.postDelayed(this, 50);
+            }
+        }
+    };
 
     private final Connection.MyBuffer globalBuffer = new Connection.MyBuffer();
 
@@ -88,38 +112,8 @@ public class MainActivity extends AppCompatActivity
         serviceMotion.start();
         // init connection service
         serviceConnection = new Connection(this, globalBuffer);
-    }
-
-    // start updating motion digits on UI
-    public void startUpdatingUIDigits()
-    {
-        runnableUpdateUI = new Runnable() {
-            @SuppressLint("DefaultLocale")
-            @Override
-            public void run()
-            {
-                try {
-                    TextView vHori = findViewById(R.id.textViewAngleHori);
-                    TextView vVert = findViewById(R.id.textViewAngleVert);
-                    vHori.setText(String.format("%5.0f", serviceMotion.readRoll()));
-                    vVert.setText(String.format("%5.0f", serviceMotion.readPitch()));
-                }
-                catch(Exception e)
-                {
-                    Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
-                }
-                finally {
-                    handlerUpdateUI.postDelayed(this, 50);
-                }
-            }
-        };
+        // start updating UI
         handlerUpdateUI.postDelayed(runnableUpdateUI, 0);
-    }
-
-    // stop updating motion digits on UI
-    public void stopUpdatingUIDigits()
-    {
-        handlerUpdateUI.removeCallbacksAndMessages(null);
     }
 
     private void setupDrawerContent(NavigationView navigationView)
@@ -146,22 +140,38 @@ public class MainActivity extends AppCompatActivity
             if(fragmentId == R.id.nav_connection_frag)
             {
                 fragment = FragmentConnection.class.newInstance();
+                controlFragment = false;
+                globalBuffer.turnOff();
             }
             else if(fragmentId == R.id.nav_control_default_frag)
             {
                 fragment = FragmentControlDefault.class.newInstance();
+                controlFragment = true;
+                globalBuffer.turnOn();
+                globalBuffer.setUpdatePitch(true);
+                globalBuffer.setUpdateRoll(true);
             }
             else if(fragmentId == R.id.nav_control_alt_frag)
             {
                 fragment = FragmentControlAlter.class.newInstance();
+                controlFragment = true;
+                globalBuffer.turnOn();
+                globalBuffer.setUpdatePitch(true);
+                globalBuffer.setUpdateRoll(false);
             }
             else if(fragmentId == R.id.nav_control_pad_frag)
             {
                 fragment = FragmentControlPad.class.newInstance();
+                controlFragment = false;
+                globalBuffer.turnOn();
+                globalBuffer.setUpdatePitch(false);
+                globalBuffer.setUpdateRoll(false);
             }
             else
             {
                 fragment = FragmentConnection.class.newInstance();
+                controlFragment = false;
+                globalBuffer.turnOff();
             }
 
         } catch(Exception e)
@@ -223,7 +233,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     // check if bluetooth is supported and enabled
-    private void checkBTH()
+    private boolean checkBTH()
     {
         BluetoothAdapter test = BluetoothAdapter.getDefaultAdapter();
         if(test == null)
@@ -233,18 +243,18 @@ public class MainActivity extends AppCompatActivity
                     .setMessage("Your phone does not support Bluetooth")
                     .setPositiveButton("OK", (dialog, which) -> System.exit(0))
                     .show();
-            return;
+            return false;
         }
-
         if(!test.isEnabled())
         {
-            Intent enableBTH = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivity(enableBTH);
+            Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT).show();
+            return false;
         }
+        return true;
     }
 
     // check if wifi is connected
-    private void checkWifi()
+    private boolean checkWifi()
     {
         // Reference: https://stackoverflow.com/questions/3841317/how-do-i-see-if-wi-fi-is-connected-on-android
         NetworkInfo test = ((ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI);
@@ -255,13 +265,14 @@ public class MainActivity extends AppCompatActivity
                     .setMessage("Your phone cannot access wifi")
                     .setPositiveButton("OK", (dialog, which) -> System.exit(0))
                     .show();
-            return;
+            return false;
         }
         if(!test.isConnected())
         {
-            Intent enableWifi = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
-            startActivity(enableWifi);
+            Toast.makeText(this, "Please connect Wifi to PC", Toast.LENGTH_SHORT).show();
+            return false;
         }
+        return true;
     }
 
     // check if motion sensor is supported
@@ -300,26 +311,55 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    // connect button callback
     public void connectionButtonOnClick(View view)
     {
         boolean connected = isConnected();
+        // if already connected, start a thread to disconnect
         if(connected)
         {
+            if(threadDisconnect != null && threadDisconnect.isAlive())
+            {
+                Toast.makeText(this, "Already Disconnecting", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Toast.makeText(this, "Disconnecting...", Toast.LENGTH_SHORT).show();
-            serviceConnection.disconnect();
-            ((Button)view).setText(R.string.buttonConnect);
+            threadDisconnect = new Thread(() -> {
+                serviceConnection.disconnect();
+                runOnUiThread(() -> {
+                    if(!isConnected())
+                    {
+                        ((Button)view).setText(R.string.buttonConnect);
+                    }
+                });
+            });
+            threadDisconnect.start();
         }
+        // if not connected, start a thread to connect
         else
         {
+            if(threadConnect != null && threadConnect.isAlive())
+            {
+                Toast.makeText(this, "Already Connecting", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Toast.makeText(this, "Connecting...", Toast.LENGTH_SHORT).show();
             RadioGroup group = findViewById(R.id.radioGroup);
-            if(group.getCheckedRadioButtonId() == R.id.radioButtonBth) checkBTH();
-            else checkWifi();
-            String result = serviceConnection.connect();
-            if(result.length() > 0)
-                Toast.makeText(this, result, Toast.LENGTH_LONG).show();
-            group.setEnabled(false);
-            ((Button)view).setText(R.string.buttonDisconnect);
+            if(group.getCheckedRadioButtonId() == R.id.radioButtonBth && !checkBTH()) return;
+            else if(group.getCheckedRadioButtonId() == R.id.radioButtonWifi && !checkWifi()) return;
+            threadConnect = new Thread(() -> {
+                String result = serviceConnection.connect();
+                runOnUiThread(() -> {
+                    if(result.length() > 0)
+                        Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
+                    if(isConnected())
+                    {
+                        group.setEnabled(false);
+                        ((Button)view).setText(R.string.buttonDisconnect);
+                    }
+                });
+            });
+            threadConnect.start();
         }
     }
 
@@ -346,10 +386,7 @@ public class MainActivity extends AppCompatActivity
         globalBuffer.addData(MotionButton.LB);
     }
 
-    public void pressRB(View view)
-    {
-        globalBuffer.addData(MotionButton.RB);
-    }
+    public void pressRB(View view) { globalBuffer.addData(MotionButton.RB); }
 
     public void pressBACK(View view)
     {
@@ -379,5 +416,37 @@ public class MainActivity extends AppCompatActivity
     public void pressRIGHT(View view)
     {
         globalBuffer.addData(MotionButton.RIGHT);
+    }
+
+    public boolean touchLT(View view, MotionEvent e)
+    {
+        switch(e.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                view.setPressed(true);
+                globalBuffer.addData(1, 30.0f);
+                return true;
+            case MotionEvent.ACTION_UP:
+                view.setPressed(false);
+                globalBuffer.addData(1, -30.0f);
+                return true;
+        }
+        return false;
+    }
+
+    public boolean touchRT(View view, MotionEvent e)
+    {
+        switch(e.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                view.setPressed(true);
+                globalBuffer.addData(1, -90.0f);
+                return true;
+            case MotionEvent.ACTION_UP:
+                view.setPressed(false);
+                globalBuffer.addData(1, -30.0f);
+                return true;
+        }
+        return false;
     }
 }

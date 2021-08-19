@@ -2,6 +2,7 @@
 
 package com.example.androidsteering;
 
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
@@ -11,12 +12,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Process;
+import android.text.InputType;
 import android.util.Log;
+import android.util.Patterns;
+import android.widget.EditText;
 import android.widget.RadioGroup;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,12 +40,22 @@ public class Connection
         private final int MAX_SIZE = 50;
         private final ArrayList<Motion.MyMove> buff = new ArrayList<>();
         private boolean running = false;
+        private boolean updatePitch = true;
+        private boolean updateRoll = true;
 
         public synchronized void addData(float pitch, float roll)
         {
             if(!running) return;
-            buff.add(new Motion.MyMove(0, 0, pitch));
-            buff.add(new Motion.MyMove(0, 1, roll));
+            if(updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
+            if(updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
+            while(buff.size() > MAX_SIZE)
+                buff.remove(0);
+        }
+
+        public synchronized void addData(int status, float val)
+        {
+            if(!running) return;
+            buff.add(new Motion.MyMove(false, status, val));
             while(buff.size() > MAX_SIZE)
                 buff.remove(0);
         }
@@ -47,7 +63,7 @@ public class Connection
         public synchronized void addData(MotionButton button)
         {
             if(!running) return;
-            buff.add(new Motion.MyMove(1, button.ordinal(), 0.0f));
+            buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
             while(buff.size() > MAX_SIZE)
                 buff.remove(0);
         }
@@ -60,6 +76,8 @@ public class Connection
 
         public synchronized void turnOn(){running = true;}
         public synchronized void turnOff(){running = false;}
+        public synchronized void setUpdatePitch(boolean val){updatePitch = val;}
+        public synchronized void setUpdateRoll(boolean val){updateRoll = val;}
     }
 
     private final MyBuffer globalBuffer;
@@ -95,6 +113,12 @@ public class Connection
         }
     };
     private Thread bthThread;
+
+    // wifi components
+    private Socket wifiSocket;
+    private Thread wifiThread;
+    public String wifiAddress = "192.168.";
+    private final int wifiPort = 55555;
 
     public Connection(MainActivity activity, MyBuffer buffer)
     {
@@ -165,11 +189,11 @@ public class Connection
                     {
                         try{
                             Thread.sleep(50);
-                        }catch(InterruptedException e){}
+                        }catch(InterruptedException e){break;}
                         continue;
                     }
                     streamOut.writeInt(10086);
-                    streamOut.writeInt(data.MotionType);
+                    streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
                 }
@@ -190,6 +214,94 @@ public class Connection
     // connect to wifi
     private String connectWifi()
     {
+        // get IP address input
+        AtomicBoolean decided = new AtomicBoolean(false);
+        AtomicBoolean validAddress = new AtomicBoolean(false);
+        mainActivity.runOnUiThread(() -> {
+            // create alert dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(mainActivity);
+            builder.setTitle("Enter IP address");
+            // create input text
+            final EditText ipInput = new EditText(mainActivity);
+            ipInput.setText(wifiAddress);
+            ipInput.setInputType(InputType.TYPE_CLASS_PHONE);
+            builder.setView(ipInput);
+            // set buttons
+            builder.setPositiveButton("OK", (dialog, which) -> {
+                if(Patterns.IP_ADDRESS.matcher(ipInput.getText().toString()).matches())
+                {
+                    if(!ipInput.getText().toString().isEmpty())
+                    {
+                        wifiAddress = ipInput.getText().toString();
+                        validAddress.set(true);
+                    }
+                    decided.set(true);
+                }
+                decided.set(true);
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> {
+                dialog.cancel();
+                decided.set(true);
+            });
+            builder.show();
+        });
+        while(!decided.get())
+        {
+            try{
+                Thread.sleep(50);
+            }catch(InterruptedException e){break;}
+        }
+        if(!validAddress.get()) return "Invalid IP address";
+        // validate connection
+        if(!testConnection()) return "Cannot connect to " + wifiAddress;
+        // create connection
+        if(wifiSocket != null || wifiThread != null) disconnect();
+        wifiSocket = new Socket();
+        try{
+            wifiSocket.bind(null);
+        }catch(IOException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] Cannot bind socket -> " + e.getMessage());
+        }
+        try{
+            wifiSocket.connect(new InetSocketAddress(wifiAddress, wifiPort), (int) MAX_WAIT_TIME);
+        }catch(IOException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] Cannot connect socket -> " + e.getMessage());
+        }
+        connected = true;
+        // start thread loop
+        wifiThread = new Thread(() -> {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+            try
+            {
+                DataOutputStream streamOut = new DataOutputStream(wifiSocket.getOutputStream());
+                while(running)
+                {
+                    Motion.MyMove data = globalBuffer.getData();
+                    if(data == null)
+                    {
+                        try{
+                            Thread.sleep(50);
+                        }catch(InterruptedException e){break;}
+                        continue;
+                    }
+                    streamOut.writeInt(10086);
+                    streamOut.writeBoolean(data.MotionButton);
+                    streamOut.writeInt(data.MotionStatus);
+                    streamOut.writeFloat(data.data);
+                }
+                streamOut.close();
+            }catch(IOException e)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[wifiThread] -> " + e.getMessage());
+            }finally{
+                connected = false;
+                unlockRadioGroup();
+            }
+        });
+        running = true;
+        wifiThread.start();
         return "";
     }
 
@@ -224,7 +336,29 @@ public class Connection
         }
         else if(connectionMode == ConnectionMode.Wifi)
         {
-
+            if(wifiThread != null)
+            {
+                running = false;
+                try{
+                    wifiThread.join(MAX_WAIT_TIME);
+                }catch(InterruptedException e)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[disconnect](wifi) Thread stopped -> " + e.getMessage());
+                }finally {
+                    wifiThread = null;
+                }
+            }
+            if(wifiSocket != null)
+            {
+                try{
+                    wifiSocket.close();
+                }catch(IOException e)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[disconnect](wifi) Cannot close socket -> " + e.getMessage());
+                }finally {
+                    wifiSocket = null;
+                }
+            }
         }
         connected = false;
         unlockRadioGroup();
@@ -305,6 +439,70 @@ public class Connection
         catch(Exception any)
         {
             Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) -> " + any.getMessage());
+        }
+        return true;
+    }
+
+    // test connection for wifi IP
+    private boolean testConnection()
+    {
+        Socket tmp = new Socket();
+        try{
+            tmp.bind(null);
+        }catch(IOException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) -> " + e.getMessage());
+            return false;
+        }
+        try{
+            tmp.connect(new InetSocketAddress(wifiAddress, wifiPort), (int) MAX_WAIT_TIME);
+        }catch(IOException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) -> " + e.getMessage());
+            return false;
+        }
+        AtomicBoolean isValid = new AtomicBoolean(false);
+        Thread validationThread = new Thread(() -> {
+            try
+            {
+                DataOutputStream streamOut = new DataOutputStream(tmp.getOutputStream());
+                streamOut.writeInt(DEVICE_CHECK_DATA);
+                streamOut.flush();
+                DataInputStream streamIn = new DataInputStream(tmp.getInputStream());
+                if(streamIn.readInt() == DEVICE_CHECK_EXPECTED) isValid.set(true);
+            }catch(Exception e)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) validationThread -> " + e.getMessage());
+            }
+        });
+        try
+        {
+            validationThread.start();
+            validationThread.join(MAX_WAIT_TIME);
+            if(validationThread.isAlive())
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) validationThread exceeds max timeout");
+                try{tmp.close();}
+                catch(Exception any)
+                {
+                    Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) -> " + any.getMessage());
+                }
+                return false;
+            }
+        }catch(InterruptedException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) validationThread exceeds max timeout -> " + e.getMessage());
+            try{tmp.close();}
+            catch(Exception any)
+            {
+                Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) -> " + any.getMessage());
+            }
+            return false;
+        }
+        try{tmp.close();}
+        catch(Exception e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) -> " + e.getMessage());
         }
         return true;
     }
