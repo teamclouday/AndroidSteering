@@ -11,8 +11,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.wifi.WifiManager;
 import android.os.Process;
 import android.text.InputType;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.util.Patterns;
 import android.widget.EditText;
@@ -21,8 +23,12 @@ import android.widget.RadioGroup;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -214,13 +220,24 @@ public class Connection
     // connect to wifi
     private String connectWifi()
     {
+        // prepare IP address
+        WifiManager wm = (WifiManager) mainActivity.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        try{
+            InetAddress address = InetAddress.getByAddress(
+                    ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(wm.getConnectionInfo().getIpAddress()).array()
+            );
+            wifiAddress = address.getHostAddress();
+        }catch(UnknownHostException e)
+        {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] -> " + e.getMessage());
+        }
         // get IP address input
         AtomicBoolean decided = new AtomicBoolean(false);
         AtomicBoolean validAddress = new AtomicBoolean(false);
         mainActivity.runOnUiThread(() -> {
             // create alert dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(mainActivity);
-            builder.setTitle("Enter IP address");
+            builder.setTitle("Set/Verify IP address (Auto-filled)");
             // create input text
             final EditText ipInput = new EditText(mainActivity);
             ipInput.setText(wifiAddress);

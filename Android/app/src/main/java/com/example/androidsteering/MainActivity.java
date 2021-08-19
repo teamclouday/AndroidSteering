@@ -201,20 +201,6 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onResume()
-    {
-        super.onResume();
-        serviceMotion.start();
-    }
-
-    @Override
-    public void onPause()
-    {
-        super.onPause();
-        serviceMotion.stop();
-    }
-
-    @Override
     public void onDestroy()
     {
         super.onDestroy();
