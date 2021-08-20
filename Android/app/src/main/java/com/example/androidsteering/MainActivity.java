@@ -39,6 +39,14 @@ import java.util.Objects;
 
 // Reference of navigation drawer: https://guides.codepath.com/android/fragment-navigation-drawer
 
+enum ControllerMode
+{
+    None,
+    Default,
+    Alter,
+    GamePad
+}
+
 public class MainActivity extends AppCompatActivity
 {
     private DrawerLayout mDrawer;
@@ -50,7 +58,7 @@ public class MainActivity extends AppCompatActivity
     private Thread threadConnect;
     private Thread threadDisconnect;
 
-    private boolean controlFragment = false;
+    private ControllerMode controllerMode;
     private final Handler handlerUpdateUI = new Handler(Looper.getMainLooper());
     private final Runnable runnableUpdateUI = new Runnable() {
         @SuppressLint("DefaultLocale")
@@ -58,12 +66,17 @@ public class MainActivity extends AppCompatActivity
         public void run()
         {
             try {
-                if(controlFragment)
+                if(controllerMode == ControllerMode.Default || controllerMode == ControllerMode.Alter)
                 {
                     TextView vHorizontal = findViewById(R.id.textViewAngleHori);
                     TextView vVertical = findViewById(R.id.textViewAngleVert);
                     vHorizontal.setText(String.format("%5.0f", serviceMotion.readRoll()));
                     vVertical.setText(String.format("%5.0f", serviceMotion.readPitch()));
+                }
+                else if(controllerMode == ControllerMode.GamePad)
+                {
+                    // in GamePad mode, fill with fake data, so that button signal can be sent faster
+                    globalBuffer.addData(0, 0.0f);
                 }
             }
             catch(Exception e)
@@ -141,13 +154,13 @@ public class MainActivity extends AppCompatActivity
             if(fragmentId == R.id.nav_connection_frag)
             {
                 fragment = FragmentConnection.class.newInstance();
-                controlFragment = false;
+                controllerMode = ControllerMode.None;
                 globalBuffer.turnOff();
             }
             else if(fragmentId == R.id.nav_control_default_frag)
             {
                 fragment = FragmentControlDefault.class.newInstance();
-                controlFragment = true;
+                controllerMode = ControllerMode.Default;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(true);
                 globalBuffer.setUpdateRoll(true);
@@ -155,7 +168,7 @@ public class MainActivity extends AppCompatActivity
             else if(fragmentId == R.id.nav_control_alt_frag)
             {
                 fragment = FragmentControlAlter.class.newInstance();
-                controlFragment = true;
+                controllerMode = ControllerMode.Alter;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(true);
                 globalBuffer.setUpdateRoll(false);
@@ -163,7 +176,7 @@ public class MainActivity extends AppCompatActivity
             else if(fragmentId == R.id.nav_control_pad_frag)
             {
                 fragment = FragmentControlPad.class.newInstance();
-                controlFragment = false;
+                controllerMode = ControllerMode.GamePad;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(false);
                 globalBuffer.setUpdateRoll(false);
@@ -171,7 +184,7 @@ public class MainActivity extends AppCompatActivity
             else
             {
                 fragment = FragmentConnection.class.newInstance();
-                controlFragment = false;
+                controllerMode = ControllerMode.None;
                 globalBuffer.turnOff();
             }
 
@@ -376,10 +389,7 @@ public class MainActivity extends AppCompatActivity
         globalBuffer.addData(MotionButton.B);
     }
 
-    public void pressLB(View view)
-    {
-        globalBuffer.addData(MotionButton.LB);
-    }
+    public void pressLB(View view) { globalBuffer.addData(MotionButton.LB); }
 
     public void pressRB(View view) { globalBuffer.addData(MotionButton.RB); }
 

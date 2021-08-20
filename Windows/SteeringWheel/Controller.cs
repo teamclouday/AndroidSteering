@@ -89,7 +89,7 @@ namespace SteeringWheel
         private uint joystickID;
         private long axisMax = 0;
         public bool vJoyInitialized { get; private set; }
-        private const int triggerInterval = 100;
+        private const int triggerInterval = 50;
 
         public Controller(MainWindow window, SharedBuffer buffer)
         {
@@ -129,12 +129,13 @@ namespace SteeringWheel
                     var data = sharedBuffer.GetData();
                     if(data == null)
                     {
-                        Thread.Sleep(50);
+                        Thread.Sleep(5);
                         continue;
                     }
                     if(data.IsButton)
                     {
-                        switch((MotionButton)data.Status)
+                        Debug.WriteLine("[Controller] processThread button pressed (" + data.Status + ")");
+                        switch ((MotionButton)data.Status)
                         {
                             case MotionButton.A:
                                 TriggerControl(ControlButton.A);
@@ -305,12 +306,15 @@ namespace SteeringWheel
         /// <param name="button"></param>
         public void TriggerControl(ControlButton button)
         {
-            lock (this)
+            new Thread(() =>
             {
-                joystick.SetBtn(true, joystickID, (uint)button);
-                Thread.Sleep(triggerInterval);
-                joystick.SetBtn(false, joystickID, (uint)button);
-            }
+                lock (this)
+                {
+                    joystick.SetBtn(true, joystickID, (uint)button);
+                    Thread.Sleep(triggerInterval);
+                    joystick.SetBtn(false, joystickID, (uint)button);
+                }
+            }).Start();
         }
 
         /// <summary>
@@ -319,63 +323,66 @@ namespace SteeringWheel
         /// <param name="axis"></param>
         public void TriggerControl(ControlAxis axis)
         {
-            lock (this)
+            new Thread(() =>
             {
-                switch (axis)
+                lock (this)
                 {
-                    case ControlAxis.POVUp:
-                        joystick.SetDiscPov(0, joystickID, 1);
-                        Thread.Sleep(triggerInterval);
-                        break;
-                    case ControlAxis.POVRight:
-                        joystick.SetDiscPov(1, joystickID, 1);
-                        Thread.Sleep(triggerInterval);
-                        break;
-                    case ControlAxis.POVDown:
-                        joystick.SetDiscPov(2, joystickID, 1);
-                        Thread.Sleep(triggerInterval);
-                        break;
-                    case ControlAxis.POVLeft:
-                        joystick.SetDiscPov(3, joystickID, 1);
-                        Thread.Sleep(triggerInterval);
-                        break;
-                    case ControlAxis.X:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_X);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_X);
-                        break;
-                    case ControlAxis.XRot:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RX);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RX);
-                        break;
-                    case ControlAxis.Y:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Y);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Y);
-                        break;
-                    case ControlAxis.YRot:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RY);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RY);
-                        break;
-                    case ControlAxis.Z:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Z); // Need to be half here
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
-                        break;
-                    case ControlAxis.ZRot:
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RZ); // Need to be half here
-                        Thread.Sleep(triggerInterval);
-                        joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
-                        break;
+                    switch (axis)
+                    {
+                        case ControlAxis.POVUp:
+                            joystick.SetDiscPov(0, joystickID, 1);
+                            Thread.Sleep(triggerInterval);
+                            break;
+                        case ControlAxis.POVRight:
+                            joystick.SetDiscPov(1, joystickID, 1);
+                            Thread.Sleep(triggerInterval);
+                            break;
+                        case ControlAxis.POVDown:
+                            joystick.SetDiscPov(2, joystickID, 1);
+                            Thread.Sleep(triggerInterval);
+                            break;
+                        case ControlAxis.POVLeft:
+                            joystick.SetDiscPov(3, joystickID, 1);
+                            Thread.Sleep(triggerInterval);
+                            break;
+                        case ControlAxis.X:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_X);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_X);
+                            break;
+                        case ControlAxis.XRot:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RX);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RX);
+                            break;
+                        case ControlAxis.Y:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Y);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Y);
+                            break;
+                        case ControlAxis.YRot:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RY);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RY);
+                            break;
+                        case ControlAxis.Z:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Z); // Need to be half here
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
+                            break;
+                        case ControlAxis.ZRot:
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RZ); // Need to be half here
+                            Thread.Sleep(triggerInterval);
+                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
+                            break;
+                    }
+                    joystick.ResetPovs(joystickID);
                 }
-                joystick.ResetPovs(joystickID);
-            }
+            }).Start();
         }
 
         /// <summary>

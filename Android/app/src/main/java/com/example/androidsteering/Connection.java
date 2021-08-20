@@ -11,10 +11,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.wifi.WifiManager;
 import android.os.Process;
 import android.text.InputType;
-import android.text.format.Formatter;
 import android.util.Log;
 import android.util.Patterns;
 import android.widget.EditText;
@@ -23,12 +21,8 @@ import android.widget.RadioGroup;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -195,7 +189,7 @@ public class Connection
                     if(data == null)
                     {
                         try{
-                            Thread.sleep(50);
+                            Thread.sleep(5);
                         }catch(InterruptedException e){break;}
                         continue;
                     }
@@ -203,7 +197,6 @@ public class Connection
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
-                    // streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)
@@ -294,6 +287,7 @@ public class Connection
             Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
             try
             {
+
                 DataOutputStream streamOut = new DataOutputStream(wifiSocket.getOutputStream());
                 while(running)
                 {
@@ -301,7 +295,7 @@ public class Connection
                     if(data == null)
                     {
                         try{
-                            Thread.sleep(50);
+                            Thread.sleep(5);
                         }catch(InterruptedException e){break;}
                         continue;
                     }
@@ -309,7 +303,6 @@ public class Connection
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
-                    // streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)

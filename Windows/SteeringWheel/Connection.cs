@@ -79,7 +79,7 @@ namespace SteeringWheel
 
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
-        private readonly int BUFFER_SIZE = 130; // 10 data packs each time
+        private readonly int BUFFER_SIZE = 13 * 10; // 10 data packs each time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
         private bool isConnectionAllowed = false;
@@ -89,13 +89,12 @@ namespace SteeringWheel
         private readonly string bthServerName = "SteeringWheel Host";
         private BluetoothListener bthListener = null;
         private BluetoothClient bthClient = null;
-        private NetworkStream bthClientStream = null;
         private BluetoothEndPoint bthTargetDeviceID = null;
         private Thread bthThread = null;
         // wifi components
         private readonly int wifiPort = 55555;
         private IPAddress wifiAddress = IPAddress.Loopback;
-        private EndPoint wifiTargetDeviceID = null;
+        private IPEndPoint wifiTargetDeviceID = null;
         private Socket wifiServer = null;
         private Socket wifiClient = null;
         private Thread wifiThread = null;
@@ -192,12 +191,6 @@ namespace SteeringWheel
                 isConnectionAllowed = false;
                 if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
             }
-            // prepare stream
-            if (bthClientStream != null)
-            {
-                bthClientStream.Dispose();
-                bthClientStream.Close();
-            }
             // try to accept client with same ID
             try
             {
@@ -224,65 +217,68 @@ namespace SteeringWheel
                 Disconnect();
                 return;
             }
-            // set data stream
-            bthClientStream = bthClient.GetStream();
-            isConnectionAllowed = true;
             // update status
             SetStatus(ConnectionStatus.Connected);
             AddLog("(bluetooth) Client connected\nClient Name: " + bthClient.RemoteMachineName + "\nClient Address: " + bthClient.RemoteEndPoint);
             // start thread
+            isConnectionAllowed = true;
             bthThread = new Thread(() =>
             {
                 // prepare data placeholders
                 byte[] placeholder = new byte[4];
                 // start processing client
-                while(isConnectionAllowed && bthClient != null)
+                try
                 {
-                    try
+                    using(var bthStream = bthClient.GetStream())
                     {
-                        // read data into a buffer
-                        byte[] buffer = new byte[BUFFER_SIZE];
-                        int size = bthClientStream.Read(buffer, 0, BUFFER_SIZE);
-                        if (size <= 0) break;
-                        // process data into data packs
-                        int idx = 0;
-                        while(idx <= size - 13)
+                        while (isConnectionAllowed && bthClient != null)
                         {
-                            // check for separator
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            if(DecodeInt(placeholder) != DATA_SEPARATOR)
+                            // read data into a buffer
+                            byte[] buffer = new byte[BUFFER_SIZE];
+                            int size = bthStream.Read(buffer, 0, BUFFER_SIZE);
+                            if (size <= 0) break;
+                            // process data into data packs
+                            int idx = 0;
+                            while (idx <= size - 13)
                             {
+                                // check for separator
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                if (DecodeInt(placeholder) != DATA_SEPARATOR)
+                                {
+                                    idx++;
+                                    continue;
+                                }
+                                idx += 4;
+                                // get following data pack
+                                MotionData data = new MotionData();
+                                data.IsButton = BitConverter.ToBoolean(buffer, idx);
                                 idx++;
-                                continue;
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                data.Status = DecodeInt(placeholder);
+                                idx += 4;
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                data.Value = DecodeFloat(placeholder);
+                                idx += 4;
+                                // add to shared buffer
+                                sharedBuffer.AddData(data);
                             }
-                            idx += 4;
-                            // get following data pack
-                            MotionData data = new MotionData();
-                            data.IsButton = BitConverter.ToBoolean(buffer, idx);
-                            idx++;
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            data.Status = DecodeInt(placeholder);
-                            idx += 4;
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            data.Value = DecodeFloat(placeholder);
-                            idx += 4;
-                            // add to shared buffer
-                            sharedBuffer.AddData(data);
+                            Thread.Sleep(10);
                         }
-                    }catch(IOException e)
-                    {
-                        Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
-                        break;
-                    }catch(ObjectDisposedException e)
-                    {
-                        Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
-                        break;
                     }
-                    Thread.Sleep(10);
                 }
-                bthClientStream.Dispose();
-                bthClientStream.Close();
-                bthClientStream = null;
+                catch (SocketException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                }
+                catch (IOException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                }
+                catch (ObjectDisposedException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                }
+                
                 Disconnect();
             });
             bthThread.Start();
@@ -377,7 +373,7 @@ namespace SteeringWheel
             {
                 isConnectionAllowed = true;
                 wifiClient = wifiServer.Accept();
-                while (!wifiClient.RemoteEndPoint.Equals(wifiTargetDeviceID) && isConnectionAllowed)
+                while (!(wifiClient.RemoteEndPoint as IPEndPoint).Address.Equals(wifiTargetDeviceID.Address) && isConnectionAllowed)
                 {
                     wifiClient.Dispose();
                     wifiClient.Close();
@@ -400,7 +396,7 @@ namespace SteeringWheel
             }
             // update status
             SetStatus(ConnectionStatus.Connected);
-            AddLog("(wifi) Client connected\nClient Local Address: " + wifiClient.LocalEndPoint + "\nClient Remote Address: " + wifiClient.RemoteEndPoint);
+            AddLog("(wifi) Client connected\nClient Address: " + wifiClient.RemoteEndPoint);
             isConnectionAllowed = true;
             // start thread
             wifiThread = new Thread(() =>
@@ -408,55 +404,57 @@ namespace SteeringWheel
                 // prepare data placeholders
                 byte[] placeholder = new byte[4];
                 // start processing client
-                while (isConnectionAllowed && wifiClient != null)
+                try
                 {
-                    try
+                    using(var wifiStream = new NetworkStream(wifiClient))
                     {
-                        // read data into a buffer
-                        byte[] buffer = new byte[BUFFER_SIZE];
-                        int size = wifiClient.Receive(buffer, 0, BUFFER_SIZE, SocketFlags.None);
-                        if (size <= 0) break;
-                        // process data into data packs
-                        int idx = 0;
-                        while (idx <= size - 13)
+                        while (isConnectionAllowed && wifiClient != null)
                         {
-                            // check for separator
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            if (DecodeInt(placeholder) != DATA_SEPARATOR)
+                            // read data into a buffer
+                            byte[] buffer = new byte[BUFFER_SIZE];
+                            int size = wifiStream.Read(buffer, 0, BUFFER_SIZE);
+                            if (size <= 0) break;
+                            // process data into data packs
+                            int idx = 0;
+                            while (idx <= size - 13)
                             {
+                                // check for separator
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                if (DecodeInt(placeholder) != DATA_SEPARATOR)
+                                {
+                                    idx++;
+                                    continue;
+                                }
+                                idx += 4;
+                                // get following data pack
+                                MotionData data = new MotionData();
+                                data.IsButton = BitConverter.ToBoolean(buffer, idx);
                                 idx++;
-                                continue;
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                data.Status = DecodeInt(placeholder);
+                                idx += 4;
+                                Array.Copy(buffer, idx, placeholder, 0, 4);
+                                data.Value = DecodeFloat(placeholder);
+                                idx += 4;
+                                // add to shared buffer
+                                sharedBuffer.AddData(data);
                             }
-                            idx += 4;
-                            // get following data pack
-                            MotionData data = new MotionData();
-                            data.IsButton = BitConverter.ToBoolean(buffer, idx);
-                            idx++;
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            data.Status = DecodeInt(placeholder);
-                            idx += 4;
-                            Array.Copy(buffer, idx, placeholder, 0, 4);
-                            data.Value = DecodeFloat(placeholder);
-                            idx += 4;
-                            // add to shared buffer
-                            sharedBuffer.AddData(data);
+                            Thread.Sleep(10);
                         }
                     }
-                    catch (IOException e)
-                    {
-                        Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
-                        break;
-                    }
-                    catch (ObjectDisposedException e)
-                    {
-                        Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
-                        break;
-                    }
-                    Thread.Sleep(10);
                 }
-                wifiClient.Dispose();
-                wifiClient.Close();
-                wifiClient = null;
+                catch (SocketException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                }
+                catch (IOException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                }
+                catch (ObjectDisposedException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                }
                 Disconnect();
             });
             wifiThread.Start();
@@ -514,11 +512,26 @@ namespace SteeringWheel
             try
             {
                 // check received integer
-                if (client.Receive(receivedPack, 0, receivedPack.Length, SocketFlags.None) <= 0) return false;
-                else if (DecodeInt(receivedPack) != DEVICE_CHECK_EXPECTED) return false;
+                int offset = 0;
+                do
+                {
+                    int size = client.Receive(receivedPack, offset, receivedPack.Length - offset, SocketFlags.None);
+                    if (size <= 0)
+                    {
+                        Debug.WriteLine("[Connection] TestClient invalid received size (" + size + ")");
+                        return false;
+                    }
+                    offset += size;
+                } while (offset < 4);
+                int decoded = DecodeInt(receivedPack);
+                if (decoded != DEVICE_CHECK_EXPECTED)
+                {
+                    Debug.WriteLine("[Connection] TestClient decoded number not expected (" + decoded + ")");
+                    return false;
+                }
                 // send back integer for verification
                 client.Send(sentPack, sentPack.Length, SocketFlags.None);
-                wifiTargetDeviceID = client.RemoteEndPoint;
+                wifiTargetDeviceID = client.RemoteEndPoint as IPEndPoint;
             }
             catch (IOException e)
             {
@@ -538,13 +551,6 @@ namespace SteeringWheel
         {
             if(mode == ConnectionMode.Bluetooth)
             {
-                // close client connection
-                if(bthClientStream != null)
-                {
-                    bthClientStream.Dispose();
-                    bthClientStream.Close();
-                    bthClientStream = null;
-                }
                 if(bthClient != null)
                 {
                     bthClient.Dispose();
