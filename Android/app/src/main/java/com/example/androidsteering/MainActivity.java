@@ -312,6 +312,7 @@ public class MainActivity extends AppCompatActivity
             }
             Toast.makeText(this, "Disconnecting...", Toast.LENGTH_SHORT).show();
             threadDisconnect = new Thread(() -> {
+                resetController();
                 serviceConnection.disconnect();
                 runOnUiThread(() -> {
                     if(!isConnected())
@@ -414,7 +415,6 @@ public class MainActivity extends AppCompatActivity
 
     public boolean touchLT(View view, MotionEvent e)
     {
-        if(!view.isShown()) return false;
         switch(e.getAction())
         {
             case MotionEvent.ACTION_DOWN:
@@ -431,7 +431,6 @@ public class MainActivity extends AppCompatActivity
 
     public boolean touchRT(View view, MotionEvent e)
     {
-        if(!view.isShown()) return false;
         switch(e.getAction())
         {
             case MotionEvent.ACTION_DOWN:

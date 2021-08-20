@@ -27,8 +27,8 @@ public class FragmentControlPad extends Fragment
         super.onViewCreated(view, savedInstanceState);
         MainActivity activity = (MainActivity)getActivity();
         assert activity != null;
-        Button buttonLT = activity.findViewById(R.id.buttonLT);
-        Button buttonRT = activity.findViewById(R.id.buttonRT);
+        Button buttonLT = activity.findViewById(R.id.buttonLTPad);
+        Button buttonRT = activity.findViewById(R.id.buttonRTPad);
         buttonLT.setOnTouchListener(activity::touchLT);
         buttonRT.setOnTouchListener(activity::touchRT);
     }

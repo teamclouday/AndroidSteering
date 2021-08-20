@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Threading;
 using System.Windows;
+using System.Threading;
+using System.Diagnostics;
 using vJoyInterfaceWrap;
 
 namespace SteeringWheel
@@ -78,7 +78,7 @@ namespace SteeringWheel
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;
         private Thread processThread;
-        private readonly int MAX_WAIT_TIME = 2000;
+        private readonly int MAX_WAIT_TIME = 1500;
         private bool isProcessAllowed = false;
         private readonly float CAP_Steering = 60.0f; //treat max angle as 60 even though it can reach 90
         private readonly float CAP_AccForward = 80.0f;

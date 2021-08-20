@@ -10,7 +10,7 @@
         Closing="MainWindow_Closing"
         Title="Android Steering Wheel" Height="500" Width="800">
     <Grid>
-        <Grid Margin="50,50,450,50">
+        <Grid Margin="50,50,400,50">
             <Border BorderBrush="Black" BorderThickness="1" Background="#FFC0FFEB" CornerRadius="10" Padding="10">
                 <ScrollViewer x:Name="LogBlockScroll" VerticalScrollBarVisibility="Auto" ScrollChanged="LogBlockScroll_ScrollChanged">
                     <TextBlock x:Name="LogBlock" TextWrapping="Wrap" FontSize="16" MouseDown="LogBlock_MouseDown"
@@ -19,7 +19,7 @@
                 </ScrollViewer>
             </Border>
         </Grid>
-        <Grid Margin="400,50,50,50">
+        <Grid Margin="450,50,50,50">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,50,0,0" Grid.ColumnSpan="2">
                 
                 <RadioButton HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="20" GroupName="connection" 
@@ -31,9 +31,11 @@
             </StackPanel>
             <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" HorizontalContentAlignment="Center" 
                     Margin="0,0,0,100" FontSize="22" Padding="5" Width="200" VerticalContentAlignment="Center" 
-                    Click="ConnectButton_Click" Cursor="Hand" x:Name="ConnectButton">Connect</Button>
+                    Click="ConnectButton_Click" Cursor="Hand" x:Name="ConnectButton"
+                    ToolTip="manage server" ToolTipService.ShowDuration="2000">Connect</Button>
             <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" FontSize="22" 
-                    Margin="0,0,0,20" Padding="5" Click="ConfigureButton_Click" Cursor="Hand">Configure</Button>
+                    Margin="0,0,0,20" Padding="5" Click="ConfigureButton_Click" Cursor="Hand"
+                    ToolTip="configure controller" ToolTipService.ShowDuration="2000">Configure</Button>
         </Grid>
     </Grid>
 </Window>

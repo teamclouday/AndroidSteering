@@ -22,6 +22,7 @@ namespace SteeringWheel
 
         private Thread connectThread;
         private Thread disconnectThread;
+        private readonly int MAX_WAIT_TIME = 1500;
 
         public MainWindow()
         {
@@ -89,6 +90,14 @@ namespace SteeringWheel
         {
             controllerService.Destroy();
             connectionService.Destroy();
+            if(connectThread != null && connectThread.IsAlive)
+            {
+                if (!connectThread.Join(MAX_WAIT_TIME)) connectThread.Abort();
+            }
+            if(disconnectThread != null && disconnectThread.IsAlive)
+            {
+                if (!disconnectThread.Join(MAX_WAIT_TIME)) disconnectThread.Abort();
+            }
             notifyIcon.Dispose();
         }
 
@@ -153,6 +162,7 @@ namespace SteeringWheel
                     }
                     else AddLog("Already connecting...");
                     break;
+                case ConnectionStatus.Listening:
                 case ConnectionStatus.Connected:
                     if(disconnectThread == null || !disconnectThread.IsAlive)
                     {
@@ -194,15 +204,12 @@ namespace SteeringWheel
             {
                 case ConnectionStatus.Default:
                     ConnectButton.Content = "Connect";
-                    ConnectButton.IsEnabled = true;
                     break;
                 case ConnectionStatus.Listening:
                     ConnectButton.Content = "Listening";
-                    ConnectButton.IsEnabled = false;
                     break;
                 case ConnectionStatus.Connected:
                     ConnectButton.Content = "Disconnect";
-                    ConnectButton.IsEnabled = true;
                     break;
             }
         }

@@ -124,7 +124,7 @@ public class Connection
     // wifi components
     private Socket wifiSocket;
     private Thread wifiThread;
-    public String wifiAddress = "192.168.";
+    public String wifiAddress = "192.168.137.";
     private final int wifiPort = 55555;
 
     public Connection(MainActivity activity, MyBuffer buffer)
@@ -203,7 +203,7 @@ public class Connection
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
-                    streamOut.flush();
+                    // streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)
@@ -223,23 +223,23 @@ public class Connection
     private String connectWifi()
     {
         // prepare IP address
-        WifiManager wm = (WifiManager) mainActivity.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        try{
-            InetAddress address = InetAddress.getByAddress(
-                    ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(wm.getConnectionInfo().getIpAddress()).array()
-            );
-            wifiAddress = address.getHostAddress();
-        }catch(UnknownHostException e)
-        {
-            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] -> " + e.getMessage());
-        }
+//        WifiManager wm = (WifiManager) mainActivity.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+//        try{
+//            InetAddress address = InetAddress.getByAddress(
+//                    ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(wm.getConnectionInfo().getIpAddress()).array()
+//            );
+//            wifiAddress = address.getHostAddress();
+//        }catch(UnknownHostException e)
+//        {
+//            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] -> " + e.getMessage());
+//        }
         // get IP address input
         AtomicBoolean decided = new AtomicBoolean(false);
         AtomicBoolean validAddress = new AtomicBoolean(false);
         mainActivity.runOnUiThread(() -> {
             // create alert dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(mainActivity);
-            builder.setTitle("Set/Verify IP address (Auto-filled)");
+            builder.setTitle("Set IP address displayed on PC");
             // create input text
             final EditText ipInput = new EditText(mainActivity);
             ipInput.setText(wifiAddress);
@@ -309,7 +309,7 @@ public class Connection
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
-                    streamOut.flush();
+                    // streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)
@@ -490,7 +490,7 @@ public class Connection
                 streamOut.flush();
                 DataInputStream streamIn = new DataInputStream(tmp.getInputStream());
                 if(streamIn.readInt() == DEVICE_CHECK_EXPECTED) isValid.set(true);
-            }catch(Exception e)
+            }catch(IOException e)
             {
                 Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Wifi) validationThread -> " + e.getMessage());
             }

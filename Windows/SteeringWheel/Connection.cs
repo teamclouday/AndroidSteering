@@ -1,14 +1,15 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Windows;
 using System.Threading;
+using System.Diagnostics;
 using System.Collections.Generic;
 using InTheHand.Net;
 using InTheHand.Net.Sockets;
 using InTheHand.Net.Bluetooth;
-using System.Windows;
-using System.Diagnostics;
-using System.IO;
+using System.Net.NetworkInformation;
 
 namespace SteeringWheel
 {
@@ -76,7 +77,7 @@ namespace SteeringWheel
         public ConnectionMode mode { get; set; }
         public ConnectionStatus status { get; private set; }
 
-        private readonly int MAX_WAIT_TIME = 2000;
+        private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
         private readonly int BUFFER_SIZE = 130; // 10 data packs each time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
@@ -86,16 +87,18 @@ namespace SteeringWheel
         // bluetooth components
         private readonly Guid bthServerUUID = new Guid("a7bda841-7dbc-4179-9800-1a3eff463f1c");
         private readonly string bthServerName = "SteeringWheel Host";
-        private BluetoothListener bthListener;
-        private BluetoothClient bthClient;
-        private NetworkStream bthClientStream;
-        private BluetoothEndPoint bthTargetDeviceID;
-        private Thread bthThread;
+        private BluetoothListener bthListener = null;
+        private BluetoothClient bthClient = null;
+        private NetworkStream bthClientStream = null;
+        private BluetoothEndPoint bthTargetDeviceID = null;
+        private Thread bthThread = null;
         // wifi components
         private readonly int wifiPort = 55555;
-        private readonly string wifiAddress = "127.0.0.1";
-        private Socket wifiServer;
-        private Thread wifiThread;
+        private IPAddress wifiAddress = IPAddress.Loopback;
+        private EndPoint wifiTargetDeviceID = null;
+        private Socket wifiServer = null;
+        private Socket wifiClient = null;
+        private Thread wifiThread = null;
 
         public Connection(MainWindow window, SharedBuffer buffer)
         {
@@ -146,12 +149,19 @@ namespace SteeringWheel
             // begin accepting clients
             isConnectionAllowed = true;
             BluetoothClient tmp = null;
+            bthTargetDeviceID = null;
             while (isConnectionAllowed)
             {
                 try
                 {
                     tmp = bthListener.AcceptBluetoothClient();
-                }catch(InvalidOperationException e)
+                }
+                catch(InvalidOperationException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
+                    break;
+                }
+                catch(SocketException e)
                 {
                     Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                     break;
@@ -165,21 +175,22 @@ namespace SteeringWheel
                     tmp.Close();
                 }
             }
-            if (tmp == null)
+            if (tmp != null)
+            {
+                tmp.Dispose();
+                tmp.Close();
+            }
+            if(bthTargetDeviceID == null)
             {
                 Disconnect();
                 return;
             }
-            // close temp client
-            tmp.Dispose();
-            tmp.Close();
             Debug.WriteLine("[Connection] ConnectBluetooth found valid client");
             // prepare thread
             if(bthThread != null && bthThread.IsAlive)
             {
                 isConnectionAllowed = false;
                 if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
-                Disconnect();
             }
             // prepare stream
             if (bthClientStream != null)
@@ -206,15 +217,22 @@ namespace SteeringWheel
                 Disconnect();
                 return;
             }
+            catch(SocketException e)
+            {
+                Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
+                AddLog("(bluetooth) Server failed to connect valid client");
+                Disconnect();
+                return;
+            }
             // set data stream
             bthClientStream = bthClient.GetStream();
             isConnectionAllowed = true;
+            // update status
+            SetStatus(ConnectionStatus.Connected);
             AddLog("(bluetooth) Client connected\nClient Name: " + bthClient.RemoteMachineName + "\nClient Address: " + bthClient.RemoteEndPoint);
             // start thread
             bthThread = new Thread(() =>
             {
-                // update status
-                SetStatus(ConnectionStatus.Connected);
                 // prepare data placeholders
                 byte[] placeholder = new byte[4];
                 // start processing client
@@ -276,7 +294,173 @@ namespace SteeringWheel
         /// </summary>
         private void ConnectWifi()
         {
-
+            // get wifi IP address
+            // reference: https://stackoverflow.com/questions/9855230/how-do-i-get-the-network-interface-and-its-right-ipv4-address
+            bool IPfound = false;
+            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (IPfound) break;
+                if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 && ni.OperationalStatus == OperationalStatus.Up)
+                {
+                    foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
+                    {
+                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            wifiAddress = ip.Address;
+                            IPfound = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            AddLog("(wifi) Server IP Address = " + wifiAddress.ToString());
+            if (wifiServer != null) Disconnect();
+            // create server and start listening
+            try
+            {
+                wifiServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                wifiServer.Bind(new IPEndPoint(wifiAddress, wifiPort));
+                wifiServer.Listen(1); // 1 request at a time
+            }
+            catch(SocketException e)
+            {
+                Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                Disconnect();
+                return;
+            }
+            SetStatus(ConnectionStatus.Listening);
+            AddLog("(wifi) Server starts listening...");
+            Socket tmp = null;
+            wifiTargetDeviceID = null;
+            isConnectionAllowed = true;
+            // find target device
+            try
+            {
+                while(isConnectionAllowed && wifiServer != null)
+                {
+                    tmp = wifiServer.Accept();
+                    Debug.WriteLine("[Connection] ConnectWifi client detected, checking...");
+                    if (TestClient(tmp)) break;
+                    else
+                    {
+                        tmp.Close();
+                        tmp.Dispose();
+                    }
+                }
+            }
+            catch (SocketException e)
+            {
+                Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                Disconnect();
+                return;
+            }
+            catch(ObjectDisposedException e)
+            {
+                Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                Disconnect();
+                return;
+            }
+            // check if target is found
+            if (wifiTargetDeviceID == null)
+            {
+                Disconnect();
+                return;
+            }
+            // prepare thread
+            if (wifiThread != null && wifiThread.IsAlive)
+            {
+                isConnectionAllowed = false;
+                if (!wifiThread.Join(MAX_WAIT_TIME)) wifiThread.Abort();
+            }
+            // try to accept client with same ID
+            try
+            {
+                isConnectionAllowed = true;
+                wifiClient = wifiServer.Accept();
+                while (!wifiClient.RemoteEndPoint.Equals(wifiTargetDeviceID) && isConnectionAllowed)
+                {
+                    wifiClient.Dispose();
+                    wifiClient.Close();
+                    wifiClient = wifiServer.Accept();
+                }
+            }
+            catch (SocketException e)
+            {
+                Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                AddLog("(wifi) Server failed to connect valid client");
+                Disconnect();
+                return;
+            }
+            catch(ObjectDisposedException e)
+            {
+                Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                AddLog("(wifi) Server failed to connect valid client");
+                Disconnect();
+                return;
+            }
+            // update status
+            SetStatus(ConnectionStatus.Connected);
+            AddLog("(wifi) Client connected\nClient Local Address: " + wifiClient.LocalEndPoint + "\nClient Remote Address: " + wifiClient.RemoteEndPoint);
+            isConnectionAllowed = true;
+            // start thread
+            wifiThread = new Thread(() =>
+            {
+                // prepare data placeholders
+                byte[] placeholder = new byte[4];
+                // start processing client
+                while (isConnectionAllowed && wifiClient != null)
+                {
+                    try
+                    {
+                        // read data into a buffer
+                        byte[] buffer = new byte[BUFFER_SIZE];
+                        int size = wifiClient.Receive(buffer, 0, BUFFER_SIZE, SocketFlags.None);
+                        if (size <= 0) break;
+                        // process data into data packs
+                        int idx = 0;
+                        while (idx <= size - 13)
+                        {
+                            // check for separator
+                            Array.Copy(buffer, idx, placeholder, 0, 4);
+                            if (DecodeInt(placeholder) != DATA_SEPARATOR)
+                            {
+                                idx++;
+                                continue;
+                            }
+                            idx += 4;
+                            // get following data pack
+                            MotionData data = new MotionData();
+                            data.IsButton = BitConverter.ToBoolean(buffer, idx);
+                            idx++;
+                            Array.Copy(buffer, idx, placeholder, 0, 4);
+                            data.Status = DecodeInt(placeholder);
+                            idx += 4;
+                            Array.Copy(buffer, idx, placeholder, 0, 4);
+                            data.Value = DecodeFloat(placeholder);
+                            idx += 4;
+                            // add to shared buffer
+                            sharedBuffer.AddData(data);
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                        break;
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+                        Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                        break;
+                    }
+                    Thread.Sleep(10);
+                }
+                wifiClient.Dispose();
+                wifiClient.Close();
+                wifiClient = null;
+                Disconnect();
+            });
+            wifiThread.Start();
+            Debug.WriteLine("[Connection] ConnectWifi thread started");
         }
 
         /// <summary>
@@ -299,7 +483,7 @@ namespace SteeringWheel
                 }
                 if (!stream.CanRead || !stream.CanWrite) return false;
                 // check received integer
-                if (stream.Read(receivedPack, 0, receivedPack.Length) == 0) return false;
+                if (stream.Read(receivedPack, 0, receivedPack.Length) <= 0) return false;
                 else if (DecodeInt(receivedPack) != DEVICE_CHECK_EXPECTED) return false;
                 // send back integer for verification
                 stream.Write(sentPack, 0, sentPack.Length);
@@ -314,6 +498,36 @@ namespace SteeringWheel
                 Debug.WriteLine("[Connection] TestClient -> " + e.Message);
                 return false;
             }
+            return true;
+        }
+
+        /// <summary>
+        /// validate client
+        /// </summary>
+        /// <param name="client">wifi client</param>
+        /// <returns></returns>
+        private bool TestClient(Socket client)
+        {
+            if (client == null) return false;
+            byte[] receivedPack = new byte[4];
+            byte[] sentPack = EncodeInt(DEVICE_CHECK_DATA);
+            try
+            {
+                // check received integer
+                if (client.Receive(receivedPack, 0, receivedPack.Length, SocketFlags.None) <= 0) return false;
+                else if (DecodeInt(receivedPack) != DEVICE_CHECK_EXPECTED) return false;
+                // send back integer for verification
+                client.Send(sentPack, sentPack.Length, SocketFlags.None);
+                wifiTargetDeviceID = client.RemoteEndPoint;
+            }
+            catch (IOException e)
+            {
+                Debug.WriteLine("[Connection] TestClient -> " + e.Message);
+                return false;
+            }
+            Debug.WriteLine("[Connection] ConnectWifi valid client found");
+            client.Dispose();
+            client.Close();
             return true;
         }
 
@@ -337,24 +551,61 @@ namespace SteeringWheel
                     bthClient.Close();
                     bthClient = null;
                 }
+                // shut down thread
                 if(bthThread != null && bthThread.IsAlive)
                 {
                     if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
                 }
+                // stop server
                 if(bthListener != null)
                 {
-                    bthListener.Server.Dispose();
-                    bthListener.Stop();
-                    bthListener = null;
+                    try
+                    {
+                        bthListener.Server.Dispose();
+                        bthListener.Stop();
+                        bthListener = null;
+                    }
+                    catch(SocketException e)
+                    {
+                        Debug.WriteLine("[Connection] Disconnect -> " + e.Message);
+                    }
                 }
-                AddLog("(bluetooth) Client disconnected");
+                if (SetStatus(ConnectionStatus.Default, true))
+                    AddLog("(bluetooth) Client disconnected");
                 Debug.WriteLine("[Connection] Disconnect client disconnected");
             }
             else
             {
-
+                // close client connection
+                if (wifiClient != null)
+                {
+                    wifiClient.Dispose();
+                    wifiClient.Close();
+                    wifiClient = null;
+                }
+                // shut down thread
+                if (wifiThread != null && wifiThread.IsAlive)
+                {
+                    if (!wifiThread.Join(MAX_WAIT_TIME)) wifiThread.Abort();
+                }
+                // stop server
+                if (wifiServer != null)
+                {
+                    try
+                    {
+                        wifiServer.Dispose();
+                        wifiServer.Close();
+                        wifiServer = null;
+                    }
+                    catch (SocketException e)
+                    {
+                        Debug.WriteLine("[Connection] Disconnect -> " + e.Message);
+                    }
+                }
+                if (SetStatus(ConnectionStatus.Default, true))
+                    AddLog("(wifi) Client disconnected");
+                Debug.WriteLine("[Connection] Disconnect client disconnected");
             }
-            SetStatus(ConnectionStatus.Default, true);
         }
 
         /// <summary>
@@ -376,8 +627,10 @@ namespace SteeringWheel
         /// </summary>
         /// <param name="s">new status</param>
         /// <param name="unlock">whether to unlock UI buttons</param>
-        private void SetStatus(ConnectionStatus s, bool unlock = false)
+        /// <returns>whether status is updated</returns>
+        private bool SetStatus(ConnectionStatus s, bool unlock = false)
         {
+            bool ret = s != status;
             status = s;
             Application.Current.Dispatcher.Invoke(new Action(() =>
             {
@@ -387,6 +640,7 @@ namespace SteeringWheel
                     mainWindow.UnlockRadioButtons();
                 }
             }));
+            return ret;
         }
 
         /// <summary>
