@@ -92,6 +92,7 @@ public class Connection
     private final int DEVICE_CHECK_DATA = 123456;
     private final int DEVICE_CHECK_EXPECTED = 654321;
     private final long MAX_WAIT_TIME = 1500L;
+    private final int DATA_SEPARATOR = 10086;
 
     private final MainActivity mainActivity;
 
@@ -198,10 +199,11 @@ public class Connection
                         }catch(InterruptedException e){break;}
                         continue;
                     }
-                    streamOut.writeInt(10086);
+                    streamOut.writeInt(DATA_SEPARATOR);
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
+                    streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)
@@ -303,10 +305,11 @@ public class Connection
                         }catch(InterruptedException e){break;}
                         continue;
                     }
-                    streamOut.writeInt(10086);
+                    streamOut.writeInt(DATA_SEPARATOR);
                     streamOut.writeBoolean(data.MotionButton);
                     streamOut.writeInt(data.MotionStatus);
                     streamOut.writeFloat(data.data);
+                    streamOut.flush();
                 }
                 streamOut.close();
             }catch(IOException e)

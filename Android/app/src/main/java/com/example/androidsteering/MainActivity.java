@@ -135,6 +135,7 @@ public class MainActivity extends AppCompatActivity
 
     public void setFragment(int fragmentId)
     {
+        resetController();
         Fragment fragment;
         try{
             if(fragmentId == R.id.nav_connection_frag)
@@ -349,6 +350,13 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    // send data to reset controller motion status
+    public void resetController()
+    {
+        globalBuffer.addData(0, 0.0f);
+        globalBuffer.addData(1, -30.0f);
+    }
+
     // callback for rest buttons
     public void pressX(View view) { globalBuffer.addData(MotionButton.X); }
 
@@ -406,6 +414,7 @@ public class MainActivity extends AppCompatActivity
 
     public boolean touchLT(View view, MotionEvent e)
     {
+        if(!view.isShown()) return false;
         switch(e.getAction())
         {
             case MotionEvent.ACTION_DOWN:
@@ -422,6 +431,7 @@ public class MainActivity extends AppCompatActivity
 
     public boolean touchRT(View view, MotionEvent e)
     {
+        if(!view.isShown()) return false;
         switch(e.getAction())
         {
             case MotionEvent.ACTION_DOWN:

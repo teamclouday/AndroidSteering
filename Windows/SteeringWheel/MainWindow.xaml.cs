@@ -1,10 +1,11 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using System.Windows.Input;
+using System.Threading;
 
 namespace SteeringWheel
 {
@@ -18,6 +19,9 @@ namespace SteeringWheel
         private readonly Controller controllerService;
 
         private readonly System.Windows.Forms.NotifyIcon notifyIcon;
+
+        private Thread connectThread;
+        private Thread disconnectThread;
 
         public MainWindow()
         {
@@ -34,6 +38,8 @@ namespace SteeringWheel
             // setup notify icon
             notifyIcon = new System.Windows.Forms.NotifyIcon();
             SetupNotifyIcon();
+            // set debug information
+            Debug.AutoFlush = true;
             // raise process priority to keep connection stable
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
         }
@@ -82,6 +88,7 @@ namespace SteeringWheel
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
             controllerService.Destroy();
+            connectionService.Destroy();
             notifyIcon.Dispose();
         }
 
@@ -132,7 +139,72 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
+            switch(connectionService.status)
+            {
+                case ConnectionStatus.Default:
+                    if (connectThread == null || !connectThread.IsAlive)
+                    {
+                        LockRadioButtons();
+                        connectThread = new Thread(() =>
+                        {
+                            connectionService.Connect();
+                        });
+                        connectThread.Start();
+                    }
+                    else AddLog("Already connecting...");
+                    break;
+                case ConnectionStatus.Connected:
+                    if(disconnectThread == null || !disconnectThread.IsAlive)
+                    {
+                        disconnectThread = new Thread(() =>
+                        {
+                            connectionService.Disconnect();
+                        });
+                        disconnectThread.Start();
+                    }
+                    else AddLog("Already disconnecting...");
+                    break;
+            }
+        }
 
+        /// <summary>
+        /// lock radio buttons
+        /// </summary>
+        public void LockRadioButtons()
+        {
+            RadioButtonBluetooth.IsEnabled = false;
+            RadioButtonWifi.IsEnabled = false;
+        }
+
+        /// <summary>
+        /// unlock radio buttons
+        /// </summary>
+        public void UnlockRadioButtons()
+        {
+            RadioButtonBluetooth.IsEnabled = true;
+            RadioButtonWifi.IsEnabled = true;
+        }
+
+        /// <summary>
+        /// update connect button text based on new connection status
+        /// </summary>
+        public void UpdateConnectButton()
+        {
+            switch(connectionService.status)
+            {
+                case ConnectionStatus.Default:
+                    ConnectButton.Content = "Connect";
+                    ConnectButton.IsEnabled = true;
+                    break;
+                case ConnectionStatus.Listening:
+                    ConnectButton.Content = "Listening";
+                    ConnectButton.IsEnabled = false;
+                    break;
+                case ConnectionStatus.Connected:
+                    ConnectButton.Content = "Disconnect";
+                    ConnectButton.IsEnabled = true;
+                    break;
+            }
         }
 
         /// <summary>
@@ -144,6 +216,17 @@ namespace SteeringWheel
         {
             ConfigureWindow configureWindow = new ConfigureWindow(this);
             configureWindow.ShowDialog();
+        }
+
+        /// <summary>
+        /// radio button click callback
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void RadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as RadioButton) == RadioButtonBluetooth) connectionService.mode = ConnectionMode.Bluetooth;
+            else if ((sender as RadioButton) == RadioButtonWifi) connectionService.mode = ConnectionMode.Wifi;
         }
 
         /// <summary>
@@ -176,6 +259,18 @@ namespace SteeringWheel
         public void ControllerClick(ControlAxis axis)
         {
             controllerService.TriggerControl(axis);
+        }
+
+        /// <summary>
+        /// add log message to main window
+        /// </summary>
+        /// <param name="message"></param>
+        private void AddLog(string message)
+        {
+            Application.Current.Dispatcher.Invoke(new Action(() =>
+            {
+                AddLogMessage("[UI]\n" + message + "\n");
+            }));
         }
     }
 }
