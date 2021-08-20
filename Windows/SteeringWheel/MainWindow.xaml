@@ -7,12 +7,33 @@
         mc:Ignorable="d"
         ResizeMode="CanMinimize"
         Background="LightSkyBlue"
+        Closing="MainWindow_Closing"
         Title="Android Steering Wheel" Height="600" Width="800">
     <Grid>
-        <StackPanel HorizontalAlignment="Left" Height="100" VerticalAlignment="Top" Width="100" Margin="50,50,0,0">
-            <Label>Connection Mode</Label>
-            <RadioButton GroupName="connection" IsChecked="True">Bluetooth</RadioButton>
-            <RadioButton GroupName="connection">Wifi Hotspot</RadioButton>
-        </StackPanel>
+        <Grid Margin="50,50,450,50">
+            <Border BorderBrush="Black" BorderThickness="1" Background="#FFC0FFEB" CornerRadius="10" Padding="10">
+                <ScrollViewer x:Name="LogBlockScroll" VerticalScrollBarVisibility="Auto" ScrollChanged="LogBlockScroll_ScrollChanged">
+                    <TextBlock x:Name="LogBlock" TextWrapping="Wrap" FontSize="16" MouseDown="LogBlock_MouseDown"
+                           ToolTip="double click to clear" ToolTipService.ShowDuration="2000" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    </TextBlock>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+        <Grid Margin="400,50,50,50">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,50,0,0" Grid.ColumnSpan="2">
+                <RadioButton HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="20" GroupName="connection" 
+                             IsChecked="True" VerticalContentAlignment="Center" Padding="10,-1,0,0" Margin="0,0,0,10" Width="200" 
+                             HorizontalContentAlignment="Right" Cursor="Hand">Bluetooth</RadioButton>
+                <RadioButton VerticalAlignment="Top" HorizontalAlignment="Left" FontSize="20" GroupName="connection" 
+                             VerticalContentAlignment="Center" UseLayoutRounding="False" Padding="10,-1,0,0" Width="200" 
+                             HorizontalContentAlignment="Right" Cursor="Hand">Wifi Hotspot</RadioButton>
+            </StackPanel>
+            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" HorizontalContentAlignment="Center" 
+                    Margin="0,0,0,100" FontSize="22" Padding="5" Width="200" VerticalContentAlignment="Center" Click="ConnectButton_Click" Cursor="Hand">Connect</Button>
+            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" FontSize="22" 
+                    Margin="0,0,0,20" Padding="5" Click="ConfigureButton_Click" Cursor="Hand">Configure</Button>
+            <ComboBox HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Width="200" FontSize="18"/>
+            <Label Content="Wifi Hotspot Address" HorizontalAlignment="Center" Margin="0,180,0,0" VerticalAlignment="Top" FontSize="20"/>
+        </Grid>
     </Grid>
 </Window>
