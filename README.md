@@ -18,7 +18,7 @@ Also a potential Xbox controller emulator
 
 * __vJoy Driver__  
   1. Make sure no physical controller is attached  
-  2. Download `vJoySetup.exe` from [vJoy sourceforge](https://sourceforge.net/projects  vjoystick/files/Beta%202.x/2.1.8.39-270518/) and install (Recommended to check all 4  programs)  
+  2. Download `vJoySetup.exe` from [vJoy sourceforge](https://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.1.8.39-270518/) and install (Recommended to check all 4 programs)  
   3. Make sure no other program is capturing controller (e.g. Steam)  
   4. Launch `Configure vJoy` and configure the device as following:  
      <img src="Assets/vjoy.png" width="300" alt="vjoy configuration">
