@@ -74,3 +74,20 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 
 ### Screenshots  
 
+__Android Side__ (Dark Mode)  
+
+<img src="Assets/phone1.jpg" width="400" alt="phone1">
+
+<img src="Assets/phone2.jpg" width="400" alt="phone2">
+
+<img src="Assets/phone3.jpg" width="400" alt="phone3">
+
+<img src="Assets/phone4.jpg" width="400" alt="phone4">
+
+<img src="Assets/phone5.jpg" width="400" alt="phone6">
+
+__Windows Side__  
+
+<img src="Assets/pc1.png" width="600" alt="pc1">
+
+<img src="Assets/pc2.png" width="600" alt="pc2">

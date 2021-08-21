@@ -1,4 +1,6 @@
+*.pfx
 .vs/*
 bin/*
 obj/*
 packages/*
+publish/*
