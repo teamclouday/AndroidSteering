@@ -382,7 +382,9 @@ public class Connection
         mainActivity.runOnUiThread(() -> {
             try{
                 RadioGroup group = mainActivity.findViewById(R.id.radioGroup);
-                group.setEnabled(true);
+                for (int i = 0; i < group.getChildCount(); i++) {
+                    group.getChildAt(i).setEnabled(true);
+                }
             }catch(Exception e)
             {
                 Log.d(mainActivity.getString(R.string.logTagConnection), "[unlockRadioGroup] -> " + e.getMessage());

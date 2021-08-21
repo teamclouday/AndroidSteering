@@ -355,7 +355,9 @@ public class MainActivity extends AppCompatActivity
                         Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
                     if(isConnected())
                     {
-                        group.setEnabled(false);
+                        for (int i = 0; i < group.getChildCount(); i++) {
+                            group.getChildAt(i).setEnabled(false);
+                        }
                         ((Button)view).setText(R.string.buttonDisconnect);
                     }
                 });

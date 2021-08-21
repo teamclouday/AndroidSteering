@@ -37,7 +37,9 @@ public class FragmentConnection extends Fragment
             group.check(R.id.radioButtonWifi);
         }
         boolean connected = activity.isConnected();
-        group.setEnabled(!connected);
+        for (int i = 0; i < group.getChildCount(); i++) {
+            group.getChildAt(i).setEnabled(!connected);
+        }
         if(connected)
         {
             button.setText(R.string.buttonDisconnect);
