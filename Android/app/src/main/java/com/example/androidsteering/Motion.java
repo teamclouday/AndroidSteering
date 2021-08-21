@@ -116,6 +116,8 @@ public class Motion implements SensorEventListener
         updateRoll(roll);
 
         globalBuffer.addData(readPitch(), readRoll());
+
+        Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor data update");
     }
 
     // update pitch

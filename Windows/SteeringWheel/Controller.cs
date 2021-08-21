@@ -78,6 +78,7 @@ namespace SteeringWheel
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;
         private Thread processThread;
+        private Thread updateThread;
         private readonly int MAX_WAIT_TIME = 1500;
         private bool isProcessAllowed = false;
         private readonly float CAP_Steering = 60.0f; //treat max angle as 60 even though it can reach 90
@@ -86,10 +87,13 @@ namespace SteeringWheel
 
         // vjoy related
         private readonly vJoy joystick;
+        private vJoy.JoystickState joyReport;
+        private readonly object joyReportLock = new object();
         private uint joystickID;
         private long axisMax = 0;
         public bool vJoyInitialized { get; private set; }
-        private const int triggerInterval = 50;
+        private const int triggerInterval = 100;
+        private const int updateInterval = 10;
 
         public Controller(MainWindow window, SharedBuffer buffer)
         {
@@ -98,9 +102,13 @@ namespace SteeringWheel
 
             vJoyInitialized = false;
             joystick = new vJoy();
-            if(joystick.vJoyEnabled()) SetupVJoy();
-
-            SetupProcess();
+            joyReport = new vJoy.JoystickState();
+            if (joystick.vJoyEnabled())
+            {
+                SetupVJoy();
+                SetupProcess();
+                SetupUpdate();
+            }
         }
 
         /// <summary>
@@ -113,11 +121,16 @@ namespace SteeringWheel
             {
                 if (!processThread.Join(MAX_WAIT_TIME)) processThread.Abort();
             }
+            if (updateThread != null && updateThread.IsAlive)
+            {
+                if (!updateThread.Join(MAX_WAIT_TIME)) updateThread.Abort();
+            }
+            joystick.ResetAll();
             joystick.RelinquishVJD(joystickID);
         }
 
         /// <summary>
-        /// setup background process that keeps running
+        /// setup background thread that write joystate
         /// </summary>
         private void SetupProcess()
         {
@@ -129,7 +142,7 @@ namespace SteeringWheel
                     var data = sharedBuffer.GetData();
                     if(data == null)
                     {
-                        Thread.Sleep(1);
+                        Thread.Sleep(5);
                         continue;
                     }
                     if(data.IsButton)
@@ -195,6 +208,31 @@ namespace SteeringWheel
         }
 
         /// <summary>
+        /// set up background thread that updates vJoy state
+        /// </summary>
+        private void SetupUpdate()
+        {
+            isProcessAllowed = true;
+            updateThread = new Thread(() =>
+            {
+                while(isProcessAllowed)
+                {
+                    lock(joyReportLock)
+                    {
+                        if (!joystick.UpdateVJD(joystickID, ref joyReport))
+                        {
+                            AddLog("Failed to update vJoy controller state");
+                            Debug.WriteLine("[Controller] updateThread failed to update VJD");
+                        }
+                    }
+                    Thread.Sleep(updateInterval);
+                }
+            });
+            updateThread.Priority = ThreadPriority.AboveNormal;
+            updateThread.Start();
+        }
+
+        /// <summary>
         /// process acceleration based on input value
         /// </summary>
         /// <param name="val"></param>
@@ -202,22 +240,33 @@ namespace SteeringWheel
         {
             if(-40.0f <= val && val <= -30.0f)
             {
-                joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
-                joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
+                lock(joyReportLock)
+                {
+                    joyReport.AxisZ = 0;
+                    joyReport.AxisZRot = 0;
+                }
             }
             else if(-90.0f <= val && val < -40.0f)
             {
                 // forward
-                float step = SmoothStep(40.0f, CAP_AccForward, -val);
+                float step = FilterLinear(-val, 40.0f, CAP_AccForward);
                 val = axisMax * step;
-                joystick.SetAxis((int)val, joystickID, HID_USAGES.HID_USAGE_RZ);
+                lock(joyReportLock)
+                {
+                    joyReport.AxisZ = 0;
+                    joyReport.AxisZRot = (int)val;
+                }
             }
             else if(-30.0f < val && val <= 90.0f)
             {
                 // backward
-                float step = SmoothStep(-30.0f, CAP_AccBackward, val);
+                float step = FilterLinear(val, -30.0f, CAP_AccBackward);
                 val = axisMax * step;
-                joystick.SetAxis((int)val, joystickID, HID_USAGES.HID_USAGE_Z);
+                lock (joyReportLock)
+                {
+                    joyReport.AxisZRot = 0;
+                    joyReport.AxisZ = (int)val;
+                }
             }
         }
 
@@ -230,21 +279,30 @@ namespace SteeringWheel
             if(-2.0f <= val && val <= 2.0f)
             {
                 // set to rest mode
-                joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_X);
+                lock (joyReportLock)
+                {
+                    joyReport.AxisX = (int)(axisMax / 2);
+                }
             }
             else if(2.0f < val && val <= 90.0f)
             {
                 // turning left
-                float step = SmoothStep(2.0f, CAP_Steering, val);
+                float step = FilterSmoothStep(val, 2.0f, CAP_Steering);
                 float half = axisMax / 2.0f * step;
-                joystick.SetAxis((int)(axisMax / 2.0f - half), joystickID, HID_USAGES.HID_USAGE_X);
+                lock (joyReportLock)
+                {
+                    joyReport.AxisX = (int)(axisMax / 2.0f - half);
+                }
             }
             else if(-90.0f <= val && val < -2.0f)
             {
                 // turning right
-                float step = SmoothStep(2.0f, CAP_Steering, -val);
+                float step = FilterSmoothStep(-val, 2.0f, CAP_Steering);
                 float half = axisMax / 2.0f * step;
-                joystick.SetAxis((int)(axisMax / 2.0f + half), joystickID, HID_USAGES.HID_USAGE_X);
+                lock (joyReportLock)
+                {
+                    joyReport.AxisX = (int)(axisMax / 2.0f + half);
+                }
             }
         }
 
@@ -267,6 +325,9 @@ namespace SteeringWheel
                     {
                         joystickID = i;
                         joystick.GetVJDAxisMax(joystickID, HID_USAGES.HID_USAGE_X, ref axisMax);
+                        joystick.ResetAll();
+                        joystick.SetAxis((int)(axisMax / 2.0f), joystickID, HID_USAGES.HID_USAGE_X);
+                        joyReport.bDevice = (byte)joystickID;
                         AddLog("vJoy valid device found\nID = " + joystickID);
                         Debug.WriteLine("[Controller] SetupVJoy find valid device ID = " + joystickID);
                         vJoyInitialized = true;
@@ -309,11 +370,14 @@ namespace SteeringWheel
         {
             new Thread(() =>
             {
-                lock (this)
+                lock (joyReportLock)
                 {
-                    joystick.SetBtn(true, joystickID, (uint)button);
-                    Thread.Sleep(triggerInterval);
-                    joystick.SetBtn(false, joystickID, (uint)button);
+                    joyReport.Buttons |= (uint)(0x1 << ((int)button - 1));
+                }
+                Thread.Sleep(triggerInterval);
+                lock (joyReportLock)
+                {
+                    joyReport.Buttons &= ~(uint)(0x1 << ((int)button - 1));
                 }
             }).Start();
         }
@@ -326,64 +390,88 @@ namespace SteeringWheel
         {
             new Thread(() =>
             {
-                lock (this)
+                lock (joyReportLock)
                 {
                     switch (axis)
                     {
                         case ControlAxis.POVUp:
-                            joystick.SetDiscPov(0, joystickID, 1);
-                            Thread.Sleep(triggerInterval);
+                            joyReport.bHats = GetDiscPov(0);
                             break;
                         case ControlAxis.POVRight:
-                            joystick.SetDiscPov(1, joystickID, 1);
-                            Thread.Sleep(triggerInterval);
+                            joyReport.bHats = GetDiscPov(1);
                             break;
                         case ControlAxis.POVDown:
-                            joystick.SetDiscPov(2, joystickID, 1);
-                            Thread.Sleep(triggerInterval);
+                            joyReport.bHats = GetDiscPov(2);
                             break;
                         case ControlAxis.POVLeft:
-                            joystick.SetDiscPov(3, joystickID, 1);
-                            Thread.Sleep(triggerInterval);
+                            joyReport.bHats = GetDiscPov(3);
                             break;
                         case ControlAxis.X:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_X);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_X);
+                            joyReport.AxisX = 0;
                             break;
                         case ControlAxis.XRot:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RX);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RX);
+                            joyReport.AxisXRot = (int)(axisMax / 2);
                             break;
                         case ControlAxis.Y:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Y);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Y);
+                            joyReport.AxisY = (int)(axisMax / 2);
                             break;
                         case ControlAxis.YRot:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RY);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RY);
+                            joyReport.AxisYRot = (int)(axisMax / 2);
                             break;
                         case ControlAxis.Z:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_Z); // Need to be half here
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_Z);
+                            joyReport.AxisZ = (int)(axisMax / 2);
                             break;
                         case ControlAxis.ZRot:
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis((int)(axisMax / 2), joystickID, HID_USAGES.HID_USAGE_RZ); // Need to be half here
-                            Thread.Sleep(triggerInterval);
-                            joystick.SetAxis(0, joystickID, HID_USAGES.HID_USAGE_RZ);
+                            joyReport.AxisZRot = (int)(axisMax / 2);
                             break;
                     }
-                    joystick.ResetPovs(joystickID);
+                }
+                Thread.Sleep(triggerInterval);
+                lock (joyReportLock)
+                {
+                    switch (axis)
+                    {
+                        case ControlAxis.POVUp:
+                        case ControlAxis.POVRight:
+                        case ControlAxis.POVDown:
+                        case ControlAxis.POVLeft:
+                            joyReport.bHats = 0xFFFFFFFF;
+                            break;
+                        case ControlAxis.X:
+                            joyReport.AxisX = (int)(axisMax / 2);
+                            break;
+                        case ControlAxis.XRot:
+                            joyReport.AxisXRot = 0;
+                            break;
+                        case ControlAxis.Y:
+                            joyReport.AxisY = 0;
+                            break;
+                        case ControlAxis.YRot:
+                            joyReport.AxisYRot = 0;
+                            break;
+                        case ControlAxis.Z:
+                            joyReport.AxisZ = 0;
+                            break;
+                        case ControlAxis.ZRot:
+                            joyReport.AxisZRot = 0;
+                            break;
+                    }
                 }
             }).Start();
+        }
+
+        /// <summary>
+        /// get discontinuous POV data based on index
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <returns></returns>
+        private uint GetDiscPov(int idx)
+        {
+            byte b1 = (byte)((idx + 0) % 4);
+            byte b2 = (byte)((idx + 1) % 4);
+            byte b3 = (byte)((idx + 2) % 4);
+            byte b4 = (byte)((idx + 3) % 4);
+            return (uint)(b4 << 12) | (uint)(b3 << 8) | (uint)(b2 << 4) | (uint)b1;
         }
 
         /// <summary>
@@ -398,14 +486,18 @@ namespace SteeringWheel
             }));
         }
 
-        /// <summary>
-        /// compute smoothstep
+        // linear filter
+        public static float FilterLinear(float val, float edge0, float edge1)
+        {
+            float x = (val - edge0) / (edge1 - edge0);
+            x = x < 0.0f ? 0.0f : x;
+            x = x > 1.0f ? 1.0f : x;
+            return x;
+        }
+
+        /// smoothstep filter
         /// Reference: https://en.wikipedia.org/wiki/Smoothstep
-        /// </summary>
-        /// <param name="edge0"></param>
-        /// <param name="edge1"></param>
-        /// <param name="val"></param>
-        public static float SmoothStep(float edge0, float edge1, float val)
+        public static float FilterSmoothStep(float val, float edge0, float edge1)
         {
             float x = (val - edge0) / (edge1 - edge0);
             x = x < 0.0f ? 0.0f : x;

@@ -37,7 +37,7 @@ public class Connection
 {
     static class MyBuffer
     {
-        private final int MAX_SIZE = 20;
+        private final int MAX_SIZE = 10;
         private final ArrayList<Motion.MyMove> buff = new ArrayList<>();
         private boolean running = false;
         private boolean updatePitch = true;
@@ -49,7 +49,7 @@ public class Connection
             if(updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
             if(updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
             int idx = 0;
-            while(buff.size() > MAX_SIZE)
+            while(buff.size() > MAX_SIZE && idx < buff.size())
             {
                 if(buff.get(idx).MotionButton)
                 {
@@ -65,7 +65,7 @@ public class Connection
             if(!running) return;
             buff.add(new Motion.MyMove(false, status, val));
             int idx = 0;
-            while(buff.size() > MAX_SIZE)
+            while(buff.size() > MAX_SIZE && idx < buff.size())
             {
                 if(buff.get(idx).MotionButton)
                 {
@@ -81,7 +81,7 @@ public class Connection
             if(!running) return;
             buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
             int idx = 0;
-            while(buff.size() > MAX_SIZE)
+            while(buff.size() > MAX_SIZE && idx < buff.size())
             {
                 if(buff.get(idx).MotionButton)
                 {

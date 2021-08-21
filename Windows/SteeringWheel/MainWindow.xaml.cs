@@ -68,8 +68,7 @@ namespace SteeringWheel
                 {
                     Show();
                     WindowState = WindowState.Normal;
-                    ConfigureWindow configureWindow = new ConfigureWindow(this);
-                    configureWindow.ShowDialog();
+                    LaunchConfigureWindow();
                 }
             );
             notifyIcon.ContextMenu.MenuItems.Add(
@@ -221,7 +220,17 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private void ConfigureButton_Click(object sender, RoutedEventArgs e)
         {
+            LaunchConfigureWindow();
+        }
+
+        /// <summary>
+        /// launch configure window
+        /// </summary>
+        private void LaunchConfigureWindow()
+        {
             ConfigureWindow configureWindow = new ConfigureWindow(this);
+            configureWindow.ShowInTaskbar = false;
+            configureWindow.Owner = this;
             configureWindow.ShowDialog();
         }
 

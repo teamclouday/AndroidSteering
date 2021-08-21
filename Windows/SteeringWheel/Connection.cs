@@ -18,34 +18,57 @@ namespace SteeringWheel
     /// </summary>
     public class SharedBuffer
     {
-        private const int MAX_SIZE = 50;
-        private readonly Queue<MotionData> buffer = new Queue<MotionData>();
+        private const int MAX_SIZE = 20;
+        private readonly List<MotionData> buffer = new List<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
             lock(buffer)
             {
-                buffer.Enqueue(new MotionData()
+                buffer.Add(new MotionData()
                 {
                     IsButton = v1,
                     Status = v2,
                     Value = v3
                 });
-                while (buffer.Count > MAX_SIZE) buffer.Dequeue();
+                int idx = 0;
+                while (buffer.Count > MAX_SIZE && idx < buffer.Count)
+                {
+                    if (buffer[idx].IsButton)
+                    {
+                        idx++;
+                        continue;
+                    }
+                    buffer.RemoveAt(idx);
+                }
             }
         }
         public void AddData(MotionData data)
         {
             lock(buffer)
             {
-                buffer.Enqueue(data);
-                while (buffer.Count > MAX_SIZE) buffer.Dequeue();
+                buffer.Add(data);
+                int idx = 0;
+                while (buffer.Count > MAX_SIZE && idx < buffer.Count)
+                {
+                    if (buffer[idx].IsButton)
+                    {
+                        idx++;
+                        continue;
+                    }
+                    buffer.RemoveAt(idx);
+                }
             }
         }
         public MotionData GetData()
         {
             lock(buffer)
             {
-                if (buffer.Count > 0) return buffer.Dequeue();
+                if (buffer.Count > 0)
+                {
+                    MotionData data = buffer[0];
+                    buffer.RemoveAt(0);
+                    return data;
+                }
                 else return null;
             }
         }
@@ -82,7 +105,7 @@ namespace SteeringWheel
 
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
-        private readonly int BUFFER_SIZE = 13 * 10; // 10 data packs each time
+        private readonly int BUFFER_SIZE = 13 * 5; // 5 data packs each time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
         private bool isConnectionAllowed = false;
