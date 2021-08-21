@@ -28,6 +28,8 @@ Also a potential Xbox controller emulator
   2. Connection modes:  
      1. Bluetooth requires the phone to enable bluetooth and has already paired with  target PC at least once  
      2. Wifi requires the phone to connect to the `Mobile Hotspot` of Windows PC (Or  at least in the same local network)  
+        When connecting, need to enter the same IP address displayed on PC app  
+        If connection failed, check if [Windows PC firewall is blocking the app](https://pureinfotech.com/allow-apps-firewall-windows-10/)  
   3. Control options:  
      1. `Default`: phone motion controls both acceleration and steering  
         Two changing numbers [left indicates horizontal angle (`Roll`), right  indicates vertical angle (`Pitch`)]  
