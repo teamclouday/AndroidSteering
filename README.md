@@ -60,7 +60,7 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 
 ------
 
-### Game Demos
+### Game Play Demos
 
 * [Assetto Corsa 1](https://www.bilibili.com/video/BV1XJ411C7R9) (version [1.0.0.6](https://github.com/teamclouday/AndroidSteering/releases/tag/1.0.0.6))  
 * [Assetto Corsa 2](https://www.bilibili.com/video/BV1Ee411s7Zr) (version [1.1.0.4](https://github.com/teamclouday/AndroidSteering/releases/tag/1.1.0.4))  
