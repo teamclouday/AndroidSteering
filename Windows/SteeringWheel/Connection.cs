@@ -22,7 +22,7 @@ namespace SteeringWheel
         private readonly Queue<MotionData> buffer = new Queue<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
-            lock(this)
+            lock(buffer)
             {
                 buffer.Enqueue(new MotionData()
                 {
@@ -35,7 +35,7 @@ namespace SteeringWheel
         }
         public void AddData(MotionData data)
         {
-            lock(this)
+            lock(buffer)
             {
                 buffer.Enqueue(data);
                 while (buffer.Count > MAX_SIZE) buffer.Dequeue();
@@ -43,8 +43,11 @@ namespace SteeringWheel
         }
         public MotionData GetData()
         {
-            if (buffer.Count > 0) return buffer.Dequeue();
-            else return null;
+            lock(buffer)
+            {
+                if (buffer.Count > 0) return buffer.Dequeue();
+                else return null;
+            }
         }
     }
 
@@ -262,7 +265,7 @@ namespace SteeringWheel
                                 // add to shared buffer
                                 sharedBuffer.AddData(data);
                             }
-                            Thread.Sleep(10);
+                            Thread.Sleep(1);
                         }
                     }
                 }
@@ -281,6 +284,7 @@ namespace SteeringWheel
                 
                 Disconnect();
             });
+            bthThread.Priority = ThreadPriority.AboveNormal;
             bthThread.Start();
             Debug.WriteLine("[Connection] ConnectBluetooth thread started");
         }
@@ -439,7 +443,7 @@ namespace SteeringWheel
                                 // add to shared buffer
                                 sharedBuffer.AddData(data);
                             }
-                            Thread.Sleep(10);
+                            Thread.Sleep(1);
                         }
                     }
                 }
@@ -457,6 +461,7 @@ namespace SteeringWheel
                 }
                 Disconnect();
             });
+            wifiThread.Priority = ThreadPriority.AboveNormal;
             wifiThread.Start();
             Debug.WriteLine("[Connection] ConnectWifi thread started");
         }

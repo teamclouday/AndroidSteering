@@ -129,7 +129,7 @@ namespace SteeringWheel
                     var data = sharedBuffer.GetData();
                     if(data == null)
                     {
-                        Thread.Sleep(5);
+                        Thread.Sleep(1);
                         continue;
                     }
                     if(data.IsButton)
@@ -190,6 +190,7 @@ namespace SteeringWheel
                     Thread.Sleep(1);
                 }
             });
+            processThread.Priority = ThreadPriority.AboveNormal;
             processThread.Start();
         }
 

@@ -60,6 +60,9 @@ public class Motion implements SensorEventListener
     private float motionPitch = 0.0f;
     private float motionRoll = 0.0f;
 
+    public static final float LTVal = 0.0f;
+    public static final float RTVal = -70.0f;
+
     public Motion(MainActivity activity, Connection.MyBuffer buffer)
     {
         mainActivity = activity;
@@ -73,8 +76,8 @@ public class Motion implements SensorEventListener
     public void start()
     {
         // sample period is set to 10ms
-        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME);
-        sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_UI);
         Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
     }
 
