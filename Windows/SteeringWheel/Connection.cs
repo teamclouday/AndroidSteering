@@ -18,7 +18,7 @@ namespace SteeringWheel
     /// </summary>
     public class SharedBuffer
     {
-        private const int MAX_SIZE = 20;
+        private const int MAX_SIZE = 5;
         private readonly List<MotionData> buffer = new List<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
@@ -175,7 +175,7 @@ namespace SteeringWheel
             isConnectionAllowed = true;
             BluetoothClient tmp = null;
             bthTargetDeviceID = null;
-            while (isConnectionAllowed)
+            while (isConnectionAllowed && bthListener != null)
             {
                 try
                 {
@@ -509,8 +509,23 @@ namespace SteeringWheel
                 }
                 if (!stream.CanRead || !stream.CanWrite) return false;
                 // check received integer
-                if (stream.Read(receivedPack, 0, receivedPack.Length) <= 0) return false;
-                else if (DecodeInt(receivedPack) != DEVICE_CHECK_EXPECTED) return false;
+                int offset = 0;
+                do
+                {
+                    int size = stream.Read(receivedPack, offset, receivedPack.Length - offset);
+                    if (size <= 0)
+                    {
+                        Debug.WriteLine("[Connection] TestClient invalid received size (" + size + ")");
+                        return false;
+                    }
+                    offset += size;
+                } while (offset < 4);
+                int decoded = DecodeInt(receivedPack);
+                if (decoded != DEVICE_CHECK_EXPECTED)
+                {
+                    Debug.WriteLine("[Connection] TestClient decoded number not expected (" + decoded + ")");
+                    return false;
+                }
                 // send back integer for verification
                 stream.Write(sentPack, 0, sentPack.Length);
                 // save valid target client ID
@@ -595,7 +610,7 @@ namespace SteeringWheel
                 {
                     try
                     {
-                        bthListener.Server.Dispose();
+                        if(bthListener.Server != null) bthListener.Server.Dispose();
                         bthListener.Stop();
                         bthListener = null;
                     }

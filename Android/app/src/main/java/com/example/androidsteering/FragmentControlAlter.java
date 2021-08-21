@@ -22,9 +22,8 @@ public class FragmentControlAlter extends Fragment
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState)
-    {
-        super.onViewCreated(view, savedInstanceState);
+    public void onResume() {
+        super.onResume();
         MainActivity activity = (MainActivity)getActivity();
         assert activity != null;
         Button buttonLT = activity.findViewById(R.id.buttonLT);

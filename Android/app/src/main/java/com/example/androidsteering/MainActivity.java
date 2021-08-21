@@ -340,6 +340,7 @@ public class MainActivity extends AppCompatActivity
                     {
                         ((Button)view).setText(R.string.buttonConnect);
                     }
+                    else ((Button)view).setText(R.string.buttonDisconnect);
                 });
             });
             threadDisconnect.start();
@@ -368,6 +369,7 @@ public class MainActivity extends AppCompatActivity
                         }
                         ((Button)view).setText(R.string.buttonDisconnect);
                     }
+                    else ((Button)view).setText(R.string.buttonConnect);
                 });
             });
             threadConnect.start();

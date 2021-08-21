@@ -16,10 +16,4 @@ public class FragmentControlDefault extends Fragment
     {
         return inflater.inflate(R.layout.frag_control_default, container, false);
     }
-
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState)
-    {
-        super.onViewCreated(view, savedInstanceState);
-    }
 }

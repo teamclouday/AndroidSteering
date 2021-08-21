@@ -26,7 +26,7 @@ Used to configure controller buttons and axis
     Overflowing values are clamped  
 * Steering (Pitch)  
   * Real range is `(-90, 90)`, with resting mode in range `(-2, 2)`  
-  * Interpreted range is `(-60, 60)`  
+  * Interpreted range is `(-45, 45)`  
     Overflowing values are clamped  
 
 ------
