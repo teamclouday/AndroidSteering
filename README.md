@@ -56,6 +56,12 @@ Also a potential Xbox controller emulator
 
 ------
 
+### For Games  
+
+By default, vJoy will use settings of xbox controller, for most modern games. Make sure to tweak in-game steering settings, because most games have been using stabilization algorithms to smooth out the steering axis input. Some may result in a lagging of steering, others may make steering extremely slow or fast.  
+
+------
+
 ### Releases  
 
 Pre-built installers can be found [here](https://github.com/teamclouday/AndroidSteering/releases)  
@@ -74,7 +80,7 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 * Try other sigmoid-shape functions to improve motion control  
   right now using `SmoothStep` for steering & `Linear` for acceleration  
 * Learn more about real-time data transmission technologies  
-  The TCP socket is holding up data instead of sending it immediately, which results in a lagging behavior  
+  The TCP socket is holding up data instead of sending it immediately, which results in a slightly lagging behavior  
 * Find alternatives to vJoy driver which supports more efficient real-time control feeding  
 
 ------
