@@ -24,21 +24,37 @@ namespace SteeringWheel
         {
             lock(buffer)
             {
-                buffer.Add(new MotionData()
+                if(v1 || buffer.Count <= MAX_SIZE)
                 {
-                    IsButton = v1,
-                    Status = v2,
-                    Value = v3
-                });
-                int idx = 0;
-                while (buffer.Count > MAX_SIZE && idx < buffer.Count)
-                {
-                    if (buffer[idx].IsButton)
+                    buffer.Add(new MotionData()
                     {
-                        idx++;
-                        continue;
+                        IsButton = v1,
+                        Status = v2,
+                        Value = v3
+                    });
+                }
+                else
+                {
+                    bool updated = false;
+                    for (int idx = buffer.Count - 1; idx >= 0; idx--)
+                    {
+                        if (!buffer[idx].IsButton && buffer[idx].Status == v2)
+                        {
+                            buffer[idx].Value = buffer[idx].Value * 0.4f + v3 * 0.6f; // take weighted average
+                            updated = true;
+                            break;
+                        }
                     }
-                    buffer.RemoveAt(idx);
+                    // if not updated, insert regardless of oversize
+                    if(!updated)
+                    {
+                        buffer.Add(new MotionData()
+                        {
+                            IsButton = v1,
+                            Status = v2,
+                            Value = v3
+                        });
+                    }
                 }
             }
         }
@@ -46,16 +62,27 @@ namespace SteeringWheel
         {
             lock(buffer)
             {
-                buffer.Add(data);
-                int idx = 0;
-                while (buffer.Count > MAX_SIZE && idx < buffer.Count)
+                if (data.IsButton || buffer.Count <= MAX_SIZE)
                 {
-                    if (buffer[idx].IsButton)
+                    buffer.Add(data);
+                }
+                else
+                {
+                    bool updated = false;
+                    for (int idx = buffer.Count - 1; idx >= 0; idx--)
                     {
-                        idx++;
-                        continue;
+                        if (!buffer[idx].IsButton && buffer[idx].Status == data.Status)
+                        {
+                            buffer[idx].Value = buffer[idx].Value * 0.4f + data.Value * 0.6f; // take weighted average
+                            updated = true;
+                            break;
+                        }
                     }
-                    buffer.RemoveAt(idx);
+                    // if not updated, insert regardless of oversize
+                    if (!updated)
+                    {
+                        buffer.Add(data);
+                    }
                 }
             }
         }
@@ -105,10 +132,13 @@ namespace SteeringWheel
 
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
-        private readonly int BUFFER_SIZE = 13 * 5; // 5 data packs each time
+        private readonly int PACK_SIZE = 13;
+        private readonly int NUM_PACKS = 4; // 4 packs a time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
         private bool isConnectionAllowed = false;
+        private byte[] lastPack = new byte[13];
+        private int lastPackLength = 0;
 
         // bluetooth components
         private readonly Guid bthServerUUID = new Guid("a7bda841-7dbc-4179-9800-1a3eff463f1c");
@@ -260,12 +290,14 @@ namespace SteeringWheel
                         while (isConnectionAllowed && bthClient != null)
                         {
                             // read data into a buffer
-                            byte[] buffer = new byte[BUFFER_SIZE];
-                            int size = bthStream.Read(buffer, 0, BUFFER_SIZE);
+                            byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
+                            Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
+                            int size = bthStream.Read(buffer, lastPackLength, PACK_SIZE * NUM_PACKS);
                             if (size <= 0) break;
+                            int totalSize = size + lastPackLength;
                             // process data into data packs
                             int idx = 0;
-                            while (idx <= size - 13)
+                            while (idx <= totalSize - PACK_SIZE)
                             {
                                 // check for separator
                                 Array.Copy(buffer, idx, placeholder, 0, 4);
@@ -288,6 +320,9 @@ namespace SteeringWheel
                                 // add to shared buffer
                                 sharedBuffer.AddData(data);
                             }
+                            // check for remaining pack, and store for next loop
+                            Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
+                            lastPackLength = totalSize - idx;
                             Thread.Sleep(1);
                         }
                     }
@@ -438,12 +473,14 @@ namespace SteeringWheel
                         while (isConnectionAllowed && wifiClient != null)
                         {
                             // read data into a buffer
-                            byte[] buffer = new byte[BUFFER_SIZE];
-                            int size = wifiStream.Read(buffer, 0, BUFFER_SIZE);
+                            byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
+                            Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
+                            int size = wifiStream.Read(buffer, lastPackLength, PACK_SIZE * NUM_PACKS);
                             if (size <= 0) break;
+                            int totalSize = size + lastPackLength;
                             // process data into data packs
                             int idx = 0;
-                            while (idx <= size - 13)
+                            while (idx <= totalSize - PACK_SIZE)
                             {
                                 // check for separator
                                 Array.Copy(buffer, idx, placeholder, 0, 4);
@@ -466,6 +503,9 @@ namespace SteeringWheel
                                 // add to shared buffer
                                 sharedBuffer.AddData(data);
                             }
+                            // check for remaining pack, and store for next loop
+                            Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
+                            lastPackLength = totalSize - idx;
                             Thread.Sleep(1);
                         }
                     }

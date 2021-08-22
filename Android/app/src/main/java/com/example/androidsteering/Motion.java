@@ -76,8 +76,8 @@ public class Motion implements SensorEventListener
     public void start()
     {
         // sample period is set to 10ms
-        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_UI);
-        sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_UI);
+        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME);
         Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
     }
 

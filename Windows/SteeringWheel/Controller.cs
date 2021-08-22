@@ -93,7 +93,7 @@ namespace SteeringWheel
         private long axisMax = 0;
         public bool vJoyInitialized { get; private set; }
         private const int triggerInterval = 100;
-        private const int updateInterval = 10;
+        private const int updateInterval = 5;
 
         public Controller(MainWindow window, SharedBuffer buffer)
         {
@@ -277,33 +277,39 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessSteering(float val)
         {
-            if(-2.0f <= val && val <= 2.0f)
+            //if(-2.0f <= val && val <= 2.0f)
+            //{
+            //    // set to rest mode
+            //    lock (joyReportLock)
+            //    {
+            //        joyReport.AxisX = (int)(axisMax / 2);
+            //    }
+            //}
+            //else if(2.0f < val && val <= 90.0f)
+            //{
+            //    // turning left
+            //    float step = FilterSmoothStep(val, 2.0f, CAP_Steering);
+            //    float half = axisMax / 2.0f * step;
+            //    lock (joyReportLock)
+            //    {
+            //        joyReport.AxisX = (int)(axisMax / 2.0f - half);
+            //    }
+            //}
+            //else if(-90.0f <= val && val < -2.0f)
+            //{
+            //    // turning right
+            //    float step = FilterSmoothStep(-val, 2.0f, CAP_Steering);
+            //    float half = axisMax / 2.0f * step;
+            //    lock (joyReportLock)
+            //    {
+            //        joyReport.AxisX = (int)(axisMax / 2.0f + half);
+            //    }
+            //}
+            float step = FilterLinear(-val, -CAP_Steering, CAP_Steering);
+            val = axisMax * step;
+            lock(joyReportLock)
             {
-                // set to rest mode
-                lock (joyReportLock)
-                {
-                    joyReport.AxisX = (int)(axisMax / 2);
-                }
-            }
-            else if(2.0f < val && val <= 90.0f)
-            {
-                // turning left
-                float step = FilterSmoothStep(val, 2.0f, CAP_Steering);
-                float half = axisMax / 2.0f * step;
-                lock (joyReportLock)
-                {
-                    joyReport.AxisX = (int)(axisMax / 2.0f - half);
-                }
-            }
-            else if(-90.0f <= val && val < -2.0f)
-            {
-                // turning right
-                float step = FilterSmoothStep(-val, 2.0f, CAP_Steering);
-                float half = axisMax / 2.0f * step;
-                lock (joyReportLock)
-                {
-                    joyReport.AxisX = (int)(axisMax / 2.0f + half);
-                }
+                joyReport.AxisX = (int)val;
             }
         }
 

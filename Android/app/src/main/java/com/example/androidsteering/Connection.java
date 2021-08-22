@@ -43,59 +43,71 @@ public class Connection
         private boolean updatePitch = true;
         private boolean updateRoll = true;
 
-        public synchronized void addData(float pitch, float roll)
+        public void addData(float pitch, float roll)
         {
             if(!running) return;
-            if(updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
-            if(updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
-            int idx = 0;
-            while(buff.size() > MAX_SIZE && idx < buff.size())
+            synchronized (buff)
             {
-                if(buff.get(idx).MotionButton)
+                if(updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
+                if(updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
+                int idx = buff.size() - 1;
+                while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    idx++;
-                    continue;
+                    if(buff.get(idx).MotionButton)
+                    {
+                        idx--;
+                        continue;
+                    }
+                    buff.remove(idx);
                 }
-                buff.remove(idx);
             }
         }
 
-        public synchronized void addData(int status, float val)
+        public void addData(int status, float val)
         {
             if(!running) return;
-            buff.add(new Motion.MyMove(false, status, val));
-            int idx = 0;
-            while(buff.size() > MAX_SIZE && idx < buff.size())
+            synchronized (buff)
             {
-                if(buff.get(idx).MotionButton)
+                buff.add(new Motion.MyMove(false, status, val));
+                int idx = buff.size() - 1;
+                while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    idx++;
-                    continue;
+                    if(buff.get(idx).MotionButton)
+                    {
+                        idx--;
+                        continue;
+                    }
+                    buff.remove(idx);
                 }
-                buff.remove(idx);
             }
         }
 
-        public synchronized void addData(MotionButton button)
+        public void addData(MotionButton button)
         {
             if(!running) return;
-            buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
-            int idx = 0;
-            while(buff.size() > MAX_SIZE && idx < buff.size())
+            synchronized (buff)
             {
-                if(buff.get(idx).MotionButton)
+                buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
+                int idx = buff.size() - 1;
+                while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    idx++;
-                    continue;
+                    if(buff.get(idx).MotionButton)
+                    {
+                        idx--;
+                        continue;
+                    }
+                    buff.remove(idx);
                 }
-                buff.remove(idx);
             }
         }
 
-        public synchronized Motion.MyMove getData()
+        public Motion.MyMove getData()
         {
-            if(buff.size() <= 0) return null;
-            return buff.remove(0);
+            synchronized (buff)
+            {
+                if(buff.size() <= 0) return null;
+                return buff.remove(0);
+            }
         }
 
         public synchronized void turnOn(){running = true;}
