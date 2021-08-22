@@ -70,15 +70,16 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 
 ### Game Play Demos
 
-* [Assetto Corsa (1)](https://www.bilibili.com/video/BV1XJ411C7R9) (version [1.0.0.6](https://github.com/teamclouday/AndroidSteering/releases/tag/1.0.0.6))  
-* [Assetto Corsa (2)](https://www.bilibili.com/video/BV1Ee411s7Zr) (version [1.1.0.4](https://github.com/teamclouday/AndroidSteering/releases/tag/1.1.0.4))  
+* [Assetto Corsa](https://www.bilibili.com/video/BV1XJ411C7R9) (version [1.0.0.6](https://github.com/teamclouday/AndroidSteering/releases/tag/1.0.0.6))  
+* [Assetto Corsa](https://www.bilibili.com/video/BV1Ee411s7Zr) (version [1.1.0.4](https://github.com/teamclouday/AndroidSteering/releases/tag/1.1.0.4))  
 * [Forza Horizon 4](https://www.bilibili.com/video/BV1oM4y1V7NK/) (version [2.0.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.0.0))  
+* [Assetto Corsa](https://www.bilibili.com/video/BV1jq4y1D7Ed/) (version [2.1.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.1.0))  
 
 ------
 
 ### Potential Improvements  
 * Try other sigmoid-shape functions to improve motion control  
-  right now using `SmoothStep` for steering & `Linear` for acceleration  
+  Right now using linear function for both steering & acceleration  
 * Learn more about real-time data transmission technologies  
   The TCP socket is holding up data instead of sending it immediately, which results in a slightly lagging behavior  
 * Find alternatives to vJoy driver which supports more efficient real-time control feeding  
