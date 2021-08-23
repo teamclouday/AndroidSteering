@@ -75,6 +75,8 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 * [Forza Horizon 4](https://www.bilibili.com/video/BV1oM4y1V7NK/) (version [2.0.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.0.0))  
 * [Assetto Corsa](https://www.bilibili.com/video/BV1jq4y1D7Ed/) (version [2.1.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.1.0))  
 
+[Game Steering Wheel Settings](SETTINGS.md)
+
 ------
 
 ### Potential Improvements  
