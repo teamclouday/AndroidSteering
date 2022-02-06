@@ -76,9 +76,12 @@ public class Motion implements SensorEventListener
     public void start()
     {
         // sample period is set to 10ms
-        sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME);
-        sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME);
-        Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
+        if(!sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME))
+            Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register accelerometer");
+        else if(!sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME))
+            Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register magnetic field");
+        else
+            Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
     }
 
     // stop sensor callback
@@ -117,7 +120,7 @@ public class Motion implements SensorEventListener
 
         globalBuffer.addData(readPitch(), readRoll());
 
-        Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor data update");
+//        Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor data update");
     }
 
     // update pitch

@@ -46,19 +46,16 @@ public class Connection
         public void addData(float pitch, float roll)
         {
             if(!running) return;
-            synchronized (buff)
+            synchronized (this)
             {
                 if(updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
                 if(updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
                 int idx = buff.size() - 1;
                 while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    if(buff.get(idx).MotionButton)
-                    {
-                        idx--;
-                        continue;
-                    }
-                    buff.remove(idx);
+                    if(!buff.get(idx).MotionButton)
+                        buff.remove(idx);
+                    idx--;
                 }
             }
         }
@@ -66,18 +63,15 @@ public class Connection
         public void addData(int status, float val)
         {
             if(!running) return;
-            synchronized (buff)
+            synchronized (this)
             {
                 buff.add(new Motion.MyMove(false, status, val));
                 int idx = buff.size() - 1;
                 while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    if(buff.get(idx).MotionButton)
-                    {
-                        idx--;
-                        continue;
-                    }
-                    buff.remove(idx);
+                    if(!buff.get(idx).MotionButton)
+                        buff.remove(idx);
+                    idx--;
                 }
             }
         }
@@ -85,25 +79,22 @@ public class Connection
         public void addData(MotionButton button)
         {
             if(!running) return;
-            synchronized (buff)
+            synchronized (this)
             {
                 buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
                 int idx = buff.size() - 1;
                 while(buff.size() > MAX_SIZE && idx >= 0)
                 {
-                    if(buff.get(idx).MotionButton)
-                    {
-                        idx--;
-                        continue;
-                    }
-                    buff.remove(idx);
+                    if(!buff.get(idx).MotionButton)
+                        buff.remove(idx);
+                    idx--;
                 }
             }
         }
 
         public Motion.MyMove getData()
         {
-            synchronized (buff)
+            synchronized (this)
             {
                 if(buff.size() <= 0) return null;
                 return buff.remove(0);
