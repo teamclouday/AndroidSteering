@@ -1,7 +1,5 @@
 package com.example.androidsteering;
 
-import androidx.fragment.app.Fragment;
-
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -10,13 +8,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
-public class FragmentControlAlter extends Fragment
-{
+public class FragmentControlAlter extends Fragment {
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState)
-    {
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.frag_control_alter, container, false);
     }
 
@@ -24,7 +21,7 @@ public class FragmentControlAlter extends Fragment
     @Override
     public void onResume() {
         super.onResume();
-        MainActivity activity = (MainActivity)getActivity();
+        MainActivity activity = (MainActivity) getActivity();
         assert activity != null;
         Button buttonLT = activity.findViewById(R.id.buttonLT);
         Button buttonRT = activity.findViewById(R.id.buttonRT);

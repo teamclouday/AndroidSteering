@@ -9,8 +9,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 
-enum MotionButton
-{
+enum MotionButton {
     X(0),
     Y(1),
     A(2),
@@ -25,19 +24,23 @@ enum MotionButton
     START(11);
 
     private final int val;
-    MotionButton(int v){val = v;}
-    public int getVal(){return val;}
+
+    MotionButton(int v) {
+        val = v;
+    }
+
+    public int getVal() {
+        return val;
+    }
 }
 
-public class Motion implements SensorEventListener
-{
-    static class MyMove
-    {
+public class Motion implements SensorEventListener {
+    static class MyMove {
         boolean MotionButton; // is it a button motion?
         int MotionStatus; // positive number for related status
         float data; // moving data
-        public MyMove(boolean type, int status, float d)
-        {
+
+        public MyMove(boolean type, int status, float d) {
             MotionButton = type;
             MotionStatus = status;
             data = d;
@@ -63,57 +66,49 @@ public class Motion implements SensorEventListener
     public static final float LTVal = 0.0f;
     public static final float RTVal = -70.0f;
 
-    public Motion(MainActivity activity, Connection.MyBuffer buffer)
-    {
+    public Motion(MainActivity activity, Connection.MyBuffer buffer) {
         mainActivity = activity;
         globalBuffer = buffer;
-        sensorManager = (SensorManager)mainActivity.getSystemService(Context.SENSOR_SERVICE);
+        sensorManager = (SensorManager) mainActivity.getSystemService(Context.SENSOR_SERVICE);
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
     // start sensor callback
-    public void start()
-    {
+    public void start() {
         // sample period is set to 10ms
-        if(!sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME))
+        if (!sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME))
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register accelerometer");
-        else if(!sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME))
+        else if (!sensorManager.registerListener(this, magSensor, SensorManager.SENSOR_DELAY_GAME))
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register magnetic field");
         else
             Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
     }
 
     // stop sensor callback
-    public void stop()
-    {
+    public void stop() {
         sensorManager.unregisterListener(this);
         Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener unregistered");
     }
 
     @Override
-    public void onSensorChanged(SensorEvent event)
-    {
-        if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-        {
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, accReading, 0, accReading.length);
             update();
-        }
-        else if(event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-        {
+        } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, magReading, 0, magReading.length);
             update();
         }
     }
 
     // update current pitch roll
-    private void update()
-    {
+    private void update() {
         SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
         SensorManager.getOrientation(rotationMatrix, orientationMatrix);
 
-        float pitch = (float)Math.toDegrees(orientationMatrix[1]);
-        float roll = (float)Math.abs(Math.toDegrees(orientationMatrix[2]))-90;
+        float pitch = (float) Math.toDegrees(orientationMatrix[1]);
+        float roll = (float) Math.abs(Math.toDegrees(orientationMatrix[2])) - 90;
 
         updatePitch(pitch);
         updateRoll(roll);
@@ -124,29 +119,26 @@ public class Motion implements SensorEventListener
     }
 
     // update pitch
-    private synchronized void updatePitch(float newPitch)
-    {
+    private synchronized void updatePitch(float newPitch) {
         motionPitch = newPitch;
     }
 
     // read pitch
-    public synchronized float readPitch()
-    {
+    public synchronized float readPitch() {
         return motionPitch;
     }
 
     // update roll
-    private synchronized void updateRoll(float newRoll)
-    {
+    private synchronized void updateRoll(float newRoll) {
         motionRoll = newRoll;
     }
 
     // read roll
-    public synchronized float readRoll()
-    {
+    public synchronized float readRoll() {
         return motionRoll;
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    }
 }

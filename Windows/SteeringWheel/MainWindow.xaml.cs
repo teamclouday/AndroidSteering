@@ -31,7 +31,7 @@ namespace SteeringWheel
             sharedBuffer = new SharedBuffer();
             connectionService = new Connection(this, sharedBuffer);
             controllerService = new Controller(this, sharedBuffer);
-            if(!controllerService.vJoyInitialized)
+            if (!controllerService.vJoyInitialized)
             {
                 MessageBox.Show("vJoy component not initialized\nPlease check your diver", "SteeringWheel", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(-1);
@@ -89,11 +89,11 @@ namespace SteeringWheel
         {
             controllerService.Destroy();
             connectionService.Destroy();
-            if(connectThread != null && connectThread.IsAlive)
+            if (connectThread != null && connectThread.IsAlive)
             {
                 if (!connectThread.Join(MAX_WAIT_TIME)) connectThread.Abort();
             }
-            if(disconnectThread != null && disconnectThread.IsAlive)
+            if (disconnectThread != null && disconnectThread.IsAlive)
             {
                 if (!disconnectThread.Join(MAX_WAIT_TIME)) disconnectThread.Abort();
             }
@@ -147,7 +147,7 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            switch(connectionService.status)
+            switch (connectionService.status)
             {
                 case ConnectionStatus.Default:
                     if (connectThread == null || !connectThread.IsAlive)
@@ -163,7 +163,7 @@ namespace SteeringWheel
                     break;
                 case ConnectionStatus.Listening:
                 case ConnectionStatus.Connected:
-                    if(disconnectThread == null || !disconnectThread.IsAlive)
+                    if (disconnectThread == null || !disconnectThread.IsAlive)
                     {
                         disconnectThread = new Thread(() =>
                         {
@@ -199,7 +199,7 @@ namespace SteeringWheel
         /// </summary>
         public void UpdateConnectButton()
         {
-            switch(connectionService.status)
+            switch (connectionService.status)
             {
                 case ConnectionStatus.Default:
                     ConnectButton.Content = "Connect";

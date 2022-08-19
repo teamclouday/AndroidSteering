@@ -21,19 +21,19 @@
         </Grid>
         <Grid Margin="450,50,50,50">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,50,0,0" Grid.ColumnSpan="2">
-                
-                <RadioButton HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="20" GroupName="connection" 
-                             IsChecked="True" VerticalContentAlignment="Center" Padding="10,-1,0,0" Margin="0,0,0,10" Width="200" 
+
+                <RadioButton HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="20" GroupName="connection"
+                             IsChecked="True" VerticalContentAlignment="Center" Padding="10,-1,0,0" Margin="0,0,0,10" Width="200"
                              HorizontalContentAlignment="Right" Cursor="Hand" x:Name="RadioButtonBluetooth" Click="RadioButton_Click">Bluetooth</RadioButton>
-                <RadioButton VerticalAlignment="Top" HorizontalAlignment="Left" FontSize="20" GroupName="connection" 
-                             VerticalContentAlignment="Center" UseLayoutRounding="False" Padding="10,-1,0,0" Width="200" 
+                <RadioButton VerticalAlignment="Top" HorizontalAlignment="Left" FontSize="20" GroupName="connection"
+                             VerticalContentAlignment="Center" UseLayoutRounding="False" Padding="10,-1,0,0" Width="200"
                              HorizontalContentAlignment="Right" Cursor="Hand" x:Name="RadioButtonWifi" Click="RadioButton_Click">Wifi Hotspot</RadioButton>
             </StackPanel>
-            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" HorizontalContentAlignment="Center" 
-                    Margin="0,0,0,100" FontSize="22" Padding="5" Width="200" VerticalContentAlignment="Center" 
+            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" HorizontalContentAlignment="Center"
+                    Margin="0,0,0,100" FontSize="22" Padding="5" Width="200" VerticalContentAlignment="Center"
                     Click="ConnectButton_Click" Cursor="Hand" x:Name="ConnectButton"
                     ToolTip="manage server" ToolTipService.ShowDuration="2000">Connect</Button>
-            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" FontSize="22" 
+            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" FontSize="22"
                     Margin="0,0,0,20" Padding="5" Click="ConfigureButton_Click" Cursor="Hand"
                     ToolTip="configure controller" ToolTipService.ShowDuration="2000">Configure</Button>
         </Grid>

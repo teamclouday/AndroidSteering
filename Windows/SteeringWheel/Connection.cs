@@ -22,9 +22,9 @@ namespace SteeringWheel
         private readonly List<MotionData> buffer = new List<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
-            lock(buffer)
+            lock (buffer)
             {
-                if(v1 || buffer.Count <= MAX_SIZE)
+                if (v1 || buffer.Count <= MAX_SIZE)
                 {
                     buffer.Add(new MotionData()
                     {
@@ -46,7 +46,7 @@ namespace SteeringWheel
                         }
                     }
                     // if not updated, insert regardless of oversize
-                    if(!updated)
+                    if (!updated)
                     {
                         buffer.Add(new MotionData()
                         {
@@ -60,7 +60,7 @@ namespace SteeringWheel
         }
         public void AddData(MotionData data)
         {
-            lock(buffer)
+            lock (buffer)
             {
                 if (data.IsButton || buffer.Count <= MAX_SIZE)
                 {
@@ -88,7 +88,7 @@ namespace SteeringWheel
         }
         public MotionData GetData()
         {
-            lock(buffer)
+            lock (buffer)
             {
                 if (buffer.Count > 0)
                 {
@@ -170,7 +170,7 @@ namespace SteeringWheel
         {
             if (mode == ConnectionMode.Bluetooth) ConnectBluetooth();
             else ConnectWifi();
-            if(status == ConnectionStatus.Default)
+            if (status == ConnectionStatus.Default)
             {
                 Application.Current.Dispatcher.Invoke(new Action(() =>
                 {
@@ -185,7 +185,7 @@ namespace SteeringWheel
         private void ConnectBluetooth()
         {
             // first check if bluetooth is enabled
-            if(!BluetoothRadio.IsSupported)
+            if (!BluetoothRadio.IsSupported)
             {
                 AddLog("(bluetooth) Bluetooth not enabled");
                 return;
@@ -211,12 +211,12 @@ namespace SteeringWheel
                 {
                     tmp = bthListener.AcceptBluetoothClient();
                 }
-                catch(InvalidOperationException e)
+                catch (InvalidOperationException e)
                 {
                     Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                     break;
                 }
-                catch(SocketException e)
+                catch (SocketException e)
                 {
                     Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                     break;
@@ -235,14 +235,14 @@ namespace SteeringWheel
                 tmp.Dispose();
                 tmp.Close();
             }
-            if(bthTargetDeviceID == null)
+            if (bthTargetDeviceID == null)
             {
                 Disconnect();
                 return;
             }
             Debug.WriteLine("[Connection] ConnectBluetooth found valid client");
             // prepare thread
-            if(bthThread != null && bthThread.IsAlive)
+            if (bthThread != null && bthThread.IsAlive)
             {
                 isConnectionAllowed = false;
                 if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
@@ -259,14 +259,14 @@ namespace SteeringWheel
                     bthClient = bthListener.AcceptBluetoothClient();
                 }
             }
-            catch(InvalidOperationException e)
+            catch (InvalidOperationException e)
             {
                 Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                 AddLog("(bluetooth) Server failed to connect valid client");
                 Disconnect();
                 return;
             }
-            catch(SocketException e)
+            catch (SocketException e)
             {
                 Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                 AddLog("(bluetooth) Server failed to connect valid client");
@@ -285,7 +285,7 @@ namespace SteeringWheel
                 // start processing client
                 try
                 {
-                    using(var bthStream = bthClient.GetStream())
+                    using (var bthStream = bthClient.GetStream())
                     {
                         while (isConnectionAllowed && bthClient != null)
                         {
@@ -339,7 +339,7 @@ namespace SteeringWheel
                 {
                     Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
                 }
-                
+
                 Disconnect();
             });
             bthThread.Priority = ThreadPriority.AboveNormal;
@@ -380,7 +380,7 @@ namespace SteeringWheel
                 wifiServer.Bind(new IPEndPoint(wifiAddress, wifiPort));
                 wifiServer.Listen(1); // 1 request at a time
             }
-            catch(SocketException e)
+            catch (SocketException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 Disconnect();
@@ -394,7 +394,7 @@ namespace SteeringWheel
             // find target device
             try
             {
-                while(isConnectionAllowed && wifiServer != null)
+                while (isConnectionAllowed && wifiServer != null)
                 {
                     tmp = wifiServer.Accept();
                     Debug.WriteLine("[Connection] ConnectWifi client detected, checking...");
@@ -412,7 +412,7 @@ namespace SteeringWheel
                 Disconnect();
                 return;
             }
-            catch(ObjectDisposedException e)
+            catch (ObjectDisposedException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 Disconnect();
@@ -449,7 +449,7 @@ namespace SteeringWheel
                 Disconnect();
                 return;
             }
-            catch(ObjectDisposedException e)
+            catch (ObjectDisposedException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 AddLog("(wifi) Server failed to connect valid client");
@@ -468,7 +468,7 @@ namespace SteeringWheel
                 // start processing client
                 try
                 {
-                    using(var wifiStream = new NetworkStream(wifiClient))
+                    using (var wifiStream = new NetworkStream(wifiClient))
                     {
                         while (isConnectionAllowed && wifiClient != null)
                         {
@@ -632,29 +632,29 @@ namespace SteeringWheel
         /// </summary>
         public void Disconnect()
         {
-            if(mode == ConnectionMode.Bluetooth)
+            if (mode == ConnectionMode.Bluetooth)
             {
-                if(bthClient != null)
+                if (bthClient != null)
                 {
                     bthClient.Dispose();
                     bthClient.Close();
                     bthClient = null;
                 }
                 // shut down thread
-                if(bthThread != null && bthThread.IsAlive)
+                if (bthThread != null && bthThread.IsAlive)
                 {
                     if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
                 }
                 // stop server
-                if(bthListener != null)
+                if (bthListener != null)
                 {
                     try
                     {
-                        if(bthListener.Server != null) bthListener.Server.Dispose();
+                        if (bthListener.Server != null) bthListener.Server.Dispose();
                         bthListener.Stop();
                         bthListener = null;
                     }
-                    catch(SocketException e)
+                    catch (SocketException e)
                     {
                         Debug.WriteLine("[Connection] Disconnect -> " + e.Message);
                     }
@@ -724,7 +724,7 @@ namespace SteeringWheel
             Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 mainWindow.UpdateConnectButton();
-                if(unlock)
+                if (unlock)
                 {
                     mainWindow.UnlockRadioButtons();
                 }

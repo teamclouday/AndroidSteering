@@ -137,15 +137,15 @@ namespace SteeringWheel
             isProcessAllowed = true;
             processThread = new Thread(() =>
             {
-                while(isProcessAllowed)
+                while (isProcessAllowed)
                 {
                     var data = sharedBuffer.GetData();
-                    if(data == null)
+                    if (data == null)
                     {
                         Thread.Sleep(5);
                         continue;
                     }
-                    if(data.IsButton)
+                    if (data.IsButton)
                     {
                         Debug.WriteLine("[Controller] processThread button pressed (" + data.Status + ")");
                         switch ((MotionButton)data.Status)
@@ -190,7 +190,7 @@ namespace SteeringWheel
                     }
                     else
                     {
-                        switch(data.Status)
+                        switch (data.Status)
                         {
                             case 0:
                                 ProcessSteering(data.Value);
@@ -215,9 +215,9 @@ namespace SteeringWheel
             isProcessAllowed = true;
             updateThread = new Thread(() =>
             {
-                while(isProcessAllowed)
+                while (isProcessAllowed)
                 {
-                    lock(joyReportLock)
+                    lock (joyReportLock)
                     {
                         if (!joystick.UpdateVJD(joystickID, ref joyReport))
                         {
@@ -239,26 +239,26 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessAcceleration(float val)
         {
-            if(-40.0f <= val && val <= -30.0f)
+            if (-40.0f <= val && val <= -30.0f)
             {
-                lock(joyReportLock)
+                lock (joyReportLock)
                 {
                     joyReport.AxisZ = 0;
                     joyReport.AxisZRot = 0;
                 }
             }
-            else if(-90.0f <= val && val < -40.0f)
+            else if (-90.0f <= val && val < -40.0f)
             {
                 // forward
                 float step = FilterLinear(-val, 40.0f, CAP_AccForward);
                 val = axisMax * step;
-                lock(joyReportLock)
+                lock (joyReportLock)
                 {
                     joyReport.AxisZ = 0;
                     joyReport.AxisZRot = (int)val;
                 }
             }
-            else if(-30.0f < val && val <= 90.0f)
+            else if (-30.0f < val && val <= 90.0f)
             {
                 // backward
                 float step = FilterLinear(val, -30.0f, CAP_AccBackward);
@@ -307,7 +307,7 @@ namespace SteeringWheel
             //}
             float step = FilterLinear(-val, -CAP_Steering, CAP_Steering);
             val = axisMax * step;
-            lock(joyReportLock)
+            lock (joyReportLock)
             {
                 joyReport.AxisX = (int)val;
             }

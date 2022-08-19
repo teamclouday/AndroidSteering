@@ -16,7 +16,7 @@
         <Button HorizontalAlignment="Right" VerticalAlignment="Top" FontSize="18" Width="50" Margin="0,80,180,0" Cursor="Hand" Click="Button_Click">RB</Button>
 
         <Button HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="18" Width="80" Margin="0,80,0,0" Cursor="Hand" Click="Button_Click">Home</Button>
-        
+
         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="50,160,0,0">
             <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="18">Left Stick</Label>
             <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonLeft_Click">Horizontal</Button>

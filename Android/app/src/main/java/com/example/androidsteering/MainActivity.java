@@ -1,12 +1,5 @@
 package com.example.androidsteering;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.drawerlayout.widget.DrawerLayout;
-
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
@@ -18,8 +11,8 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.os.PersistableBundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -29,7 +22,13 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
@@ -39,16 +38,14 @@ import java.util.Objects;
 
 // Reference of navigation drawer: https://guides.codepath.com/android/fragment-navigation-drawer
 
-enum ControllerMode
-{
+enum ControllerMode {
     None,
     Default,
     Alter,
     GamePad
 }
 
-public class MainActivity extends AppCompatActivity
-{
+public class MainActivity extends AppCompatActivity {
     private DrawerLayout mDrawer;
     private ActionBarDrawerToggle drawerToggle;
     private Toolbar toolbar;
@@ -65,33 +62,25 @@ public class MainActivity extends AppCompatActivity
     private final Runnable runnableUpdateUI = new Runnable() {
         @SuppressLint("DefaultLocale")
         @Override
-        public void run()
-        {
+        public void run() {
             try {
-                if(controllerMode == ControllerMode.Default || controllerMode == ControllerMode.Alter)
-                {
+                if (controllerMode == ControllerMode.Default || controllerMode == ControllerMode.Alter) {
                     TextView vHorizontal = findViewById(R.id.textViewAngleHori);
                     TextView vVertical = findViewById(R.id.textViewAngleVert);
                     vHorizontal.setText(String.format("%5.0f", serviceMotion.readRoll()));
                     vVertical.setText(String.format("%5.0f", serviceMotion.readPitch()));
-                }
-                else if(controllerMode == ControllerMode.GamePad)
-                {
+                } else if (controllerMode == ControllerMode.GamePad) {
                     // in GamePad mode, fill with fake data, so that button signal can be sent faster
                     globalBuffer.addData(0, 0.0f);
                 }
-                if(controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad)
-                {
-                    if(!LTPressed && !RTPressed) globalBuffer.addData(1, -30.0f);
-                    if(LTPressed) globalBuffer.addData(1, Motion.LTVal);
-                    if(RTPressed) globalBuffer.addData(1, Motion.RTVal);
+                if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
+                    if (!LTPressed && !RTPressed) globalBuffer.addData(1, -30.0f);
+                    if (LTPressed) globalBuffer.addData(1, Motion.LTVal);
+                    if (RTPressed) globalBuffer.addData(1, Motion.RTVal);
                 }
-            }
-            catch(Exception e)
-            {
+            } catch (Exception e) {
                 Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
-            }
-            finally {
+            } finally {
                 handlerUpdateUI.postDelayed(this, 20);
             }
         }
@@ -100,8 +89,7 @@ public class MainActivity extends AppCompatActivity
     private final Connection.MyBuffer globalBuffer = new Connection.MyBuffer();
 
     @Override
-    public void onCreate(Bundle savedInstanceState)
-    {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         // force fullscreen
@@ -121,7 +109,7 @@ public class MainActivity extends AppCompatActivity
         setupDrawerContent(navigationView);
 
         mDrawer = findViewById(R.id.drawer_layout);
-        drawerToggle = new ActionBarDrawerToggle(this, mDrawer, toolbar, R.string.drawer_open,  R.string.drawer_close);
+        drawerToggle = new ActionBarDrawerToggle(this, mDrawer, toolbar, R.string.drawer_open, R.string.drawer_close);
         drawerToggle.setDrawerIndicatorEnabled(true);
         drawerToggle.syncState();
         mDrawer.addDrawerListener(drawerToggle);
@@ -137,8 +125,7 @@ public class MainActivity extends AppCompatActivity
         handlerUpdateUI.postDelayed(runnableUpdateUI, 0);
     }
 
-    private void setupDrawerContent(NavigationView navigationView)
-    {
+    private void setupDrawerContent(NavigationView navigationView) {
         navigationView.setNavigationItemSelectedListener(
                 menuItem -> {
                     selectDrawerItem(menuItem);
@@ -146,58 +133,46 @@ public class MainActivity extends AppCompatActivity
                 });
     }
 
-    public void selectDrawerItem(MenuItem menuItem)
-    {
+    public void selectDrawerItem(MenuItem menuItem) {
         setFragment(menuItem.getItemId());
         menuItem.setChecked(true);
         toolbar.setTitle(menuItem.getTitle());
         mDrawer.closeDrawers();
     }
 
-    public void setFragment(int fragmentId)
-    {
+    public void setFragment(int fragmentId) {
         resetController();
         Fragment fragment;
-        try{
-            if(fragmentId == R.id.nav_connection_frag)
-            {
+        try {
+            if (fragmentId == R.id.nav_connection_frag) {
                 fragment = FragmentConnection.class.newInstance();
                 controllerMode = ControllerMode.None;
                 globalBuffer.turnOff();
-            }
-            else if(fragmentId == R.id.nav_control_default_frag)
-            {
+            } else if (fragmentId == R.id.nav_control_default_frag) {
                 fragment = FragmentControlDefault.class.newInstance();
                 controllerMode = ControllerMode.Default;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(true);
                 globalBuffer.setUpdateRoll(true);
-            }
-            else if(fragmentId == R.id.nav_control_alt_frag)
-            {
+            } else if (fragmentId == R.id.nav_control_alt_frag) {
                 fragment = FragmentControlAlter.class.newInstance();
                 controllerMode = ControllerMode.Alter;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(true);
                 globalBuffer.setUpdateRoll(false);
-            }
-            else if(fragmentId == R.id.nav_control_pad_frag)
-            {
+            } else if (fragmentId == R.id.nav_control_pad_frag) {
                 fragment = FragmentControlPad.class.newInstance();
                 controllerMode = ControllerMode.GamePad;
                 globalBuffer.turnOn();
                 globalBuffer.setUpdatePitch(false);
                 globalBuffer.setUpdateRoll(false);
-            }
-            else
-            {
+            } else {
                 fragment = FragmentConnection.class.newInstance();
                 controllerMode = ControllerMode.None;
                 globalBuffer.turnOff();
             }
 
-        } catch(Exception e)
-        {
+        } catch (Exception e) {
             Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
             return;
         }
@@ -209,31 +184,26 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onPostCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState)
-    {
+    public void onPostCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
         super.onPostCreate(savedInstanceState, persistentState);
         drawerToggle.syncState();
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig)
-    {
+    public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         drawerToggle.onConfigurationChanged(newConfig);
     }
 
     @Override
-    public void onDestroy()
-    {
+    public void onDestroy() {
         super.onDestroy();
         serviceMotion.stop();
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item)
-    {
-        if (drawerToggle.onOptionsItemSelected(item))
-        {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (drawerToggle.onOptionsItemSelected(item)) {
             return true;
         }
 
@@ -241,11 +211,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     // check if bluetooth is supported and enabled
-    private boolean checkBTH()
-    {
+    private boolean checkBTH() {
         BluetoothAdapter test = BluetoothAdapter.getDefaultAdapter();
-        if(test == null)
-        {
+        if (test == null) {
             new AlertDialog.Builder(this)
                     .setTitle("Not Compatible")
                     .setMessage("Your phone does not support Bluetooth")
@@ -253,8 +221,7 @@ public class MainActivity extends AppCompatActivity
                     .show();
             return false;
         }
-        if(!test.isEnabled())
-        {
+        if (!test.isEnabled()) {
             Toast.makeText(this, "Please enable bluetooth", Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -262,12 +229,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     // check if wifi is connected
-    private boolean checkWifi()
-    {
+    private boolean checkWifi() {
         // Reference: https://stackoverflow.com/questions/3841317/how-do-i-see-if-wi-fi-is-connected-on-android
-        NetworkInfo test = ((ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if(test == null)
-        {
+        NetworkInfo test = ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (test == null) {
             new AlertDialog.Builder(this)
                     .setTitle("Not Compatible")
                     .setMessage("Your phone cannot access wifi")
@@ -275,8 +240,7 @@ public class MainActivity extends AppCompatActivity
                     .show();
             return false;
         }
-        if(!test.isConnected())
-        {
+        if (!test.isConnected()) {
             Toast.makeText(this, "Please connect Wifi to PC", Toast.LENGTH_SHORT).show();
             return false;
         }
@@ -284,11 +248,9 @@ public class MainActivity extends AppCompatActivity
     }
 
     // check if motion sensor is supported
-    public void checkSensor()
-    {
-        SensorManager test = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
-        if(test == null || test.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) == null || test.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null)
-        {
+    public void checkSensor() {
+        SensorManager test = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        if (test == null || test.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) == null || test.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null) {
             new AlertDialog.Builder(this)
                     .setTitle("Not Compatible")
                     .setMessage("Your phone does not have required sensors")
@@ -298,36 +260,33 @@ public class MainActivity extends AppCompatActivity
     }
 
     // check if service is connected
-    public boolean isConnected(){return serviceConnection.connected;}
+    public boolean isConnected() {
+        return serviceConnection.connected;
+    }
 
     // get service connection mode
-    public ConnectionMode getConnectionMode(){return serviceConnection.connectionMode;}
+    public ConnectionMode getConnectionMode() {
+        return serviceConnection.connectionMode;
+    }
 
     // Connection fragment callbacks
-    public void setRadioGroupCallback()
-    {
+    public void setRadioGroupCallback() {
         RadioGroup radioGroup = findViewById(R.id.radioGroup);
         radioGroup.setOnCheckedChangeListener((group, i) -> {
-            if(i == R.id.radioButtonBth)
-            {
+            if (i == R.id.radioButtonBth) {
                 serviceConnection.connectionMode = ConnectionMode.Bluetooth;
-            }
-            else if(i == R.id.radioButtonWifi)
-            {
+            } else if (i == R.id.radioButtonWifi) {
                 serviceConnection.connectionMode = ConnectionMode.Wifi;
             }
         });
     }
 
     // connect button callback
-    public void connectionButtonOnClick(View view)
-    {
+    public void connectionButtonOnClick(View view) {
         boolean connected = isConnected();
         // if already connected, start a thread to disconnect
-        if(connected)
-        {
-            if(threadDisconnect != null && threadDisconnect.isAlive())
-            {
+        if (connected) {
+            if (threadDisconnect != null && threadDisconnect.isAlive()) {
                 Toast.makeText(this, "Already Disconnecting", Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -336,40 +295,35 @@ public class MainActivity extends AppCompatActivity
                 resetController();
                 serviceConnection.disconnect();
                 runOnUiThread(() -> {
-                    if(!isConnected())
-                    {
-                        ((Button)view).setText(R.string.buttonConnect);
-                    }
-                    else ((Button)view).setText(R.string.buttonDisconnect);
+                    if (!isConnected()) {
+                        ((Button) view).setText(R.string.buttonConnect);
+                    } else ((Button) view).setText(R.string.buttonDisconnect);
                 });
             });
             threadDisconnect.start();
         }
         // if not connected, start a thread to connect
-        else
-        {
-            if(threadConnect != null && threadConnect.isAlive())
-            {
+        else {
+            if (threadConnect != null && threadConnect.isAlive()) {
                 Toast.makeText(this, "Already Connecting", Toast.LENGTH_SHORT).show();
                 return;
             }
             Toast.makeText(this, "Connecting...", Toast.LENGTH_SHORT).show();
             RadioGroup group = findViewById(R.id.radioGroup);
-            if(group.getCheckedRadioButtonId() == R.id.radioButtonBth && !checkBTH()) return;
-            else if(group.getCheckedRadioButtonId() == R.id.radioButtonWifi && !checkWifi()) return;
+            if (group.getCheckedRadioButtonId() == R.id.radioButtonBth && !checkBTH()) return;
+            else if (group.getCheckedRadioButtonId() == R.id.radioButtonWifi && !checkWifi())
+                return;
             threadConnect = new Thread(() -> {
                 String result = serviceConnection.connect();
                 runOnUiThread(() -> {
-                    if(result.length() > 0)
+                    if (result.length() > 0)
                         Toast.makeText(this, result, Toast.LENGTH_SHORT).show();
-                    if(isConnected())
-                    {
+                    if (isConnected()) {
                         for (int i = 0; i < group.getChildCount(); i++) {
                             group.getChildAt(i).setEnabled(false);
                         }
-                        ((Button)view).setText(R.string.buttonDisconnect);
-                    }
-                    else ((Button)view).setText(R.string.buttonConnect);
+                        ((Button) view).setText(R.string.buttonDisconnect);
+                    } else ((Button) view).setText(R.string.buttonConnect);
                 });
             });
             threadConnect.start();
@@ -377,68 +331,62 @@ public class MainActivity extends AppCompatActivity
     }
 
     // send data to reset controller motion status
-    public void resetController()
-    {
+    public void resetController() {
         globalBuffer.addData(0, 0.0f);
         globalBuffer.addData(1, -30.0f);
     }
 
     // callback for rest buttons
-    public void pressX(View view) { globalBuffer.addData(MotionButton.X); }
+    public void pressX(View view) {
+        globalBuffer.addData(MotionButton.X);
+    }
 
-    public void pressY(View view)
-    {
+    public void pressY(View view) {
         globalBuffer.addData(MotionButton.Y);
     }
 
-    public void pressA(View view)
-    {
+    public void pressA(View view) {
         globalBuffer.addData(MotionButton.A);
     }
 
-    public void pressB(View view)
-    {
+    public void pressB(View view) {
         globalBuffer.addData(MotionButton.B);
     }
 
-    public void pressLB(View view) { globalBuffer.addData(MotionButton.LB); }
+    public void pressLB(View view) {
+        globalBuffer.addData(MotionButton.LB);
+    }
 
-    public void pressRB(View view) { globalBuffer.addData(MotionButton.RB); }
+    public void pressRB(View view) {
+        globalBuffer.addData(MotionButton.RB);
+    }
 
-    public void pressBACK(View view)
-    {
+    public void pressBACK(View view) {
         globalBuffer.addData(MotionButton.BACK);
     }
 
-    public void pressSTART(View view)
-    {
+    public void pressSTART(View view) {
         globalBuffer.addData(MotionButton.START);
     }
 
-    public void pressUP(View view)
-    {
+    public void pressUP(View view) {
         globalBuffer.addData(MotionButton.UP);
     }
 
-    public void pressDOWN(View view)
-    {
+    public void pressDOWN(View view) {
         globalBuffer.addData(MotionButton.DOWN);
     }
 
-    public void pressLEFT(View view)
-    {
+    public void pressLEFT(View view) {
         globalBuffer.addData(MotionButton.LEFT);
     }
 
-    public void pressRIGHT(View view)
-    {
+    public void pressRIGHT(View view) {
         globalBuffer.addData(MotionButton.RIGHT);
     }
 
-    public boolean touchLT(View view, MotionEvent e)
-    {
-        switch(e.getAction())
-        {
+    public boolean touchLT(View view, MotionEvent e) {
+        switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
                 globalBuffer.addData(1, Motion.LTVal);
@@ -453,10 +401,8 @@ public class MainActivity extends AppCompatActivity
         return false;
     }
 
-    public boolean touchRT(View view, MotionEvent e)
-    {
-        switch(e.getAction())
-        {
+    public boolean touchRT(View view, MotionEvent e) {
+        switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
                 globalBuffer.addData(1, Motion.RTVal);
