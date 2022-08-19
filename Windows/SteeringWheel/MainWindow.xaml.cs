@@ -33,7 +33,7 @@ namespace SteeringWheel
             controllerService = new Controller(this, sharedBuffer);
             if (!controllerService.vJoyInitialized)
             {
-                MessageBox.Show("vJoy component not initialized\nPlease check your diver", "SteeringWheel", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("No valid vJoy device found\nPlease check your vJoy device setup", "SteeringWheel", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(-1);
             }
             // setup notify icon
@@ -69,6 +69,15 @@ namespace SteeringWheel
                     Show();
                     WindowState = WindowState.Normal;
                     LaunchConfigureWindow();
+                }
+            );
+            notifyIcon.ContextMenu.MenuItems.Add(
+                "Controller",
+                delegate (object sender, EventArgs e)
+                {
+                    Show();
+                    WindowState = WindowState.Normal;
+                    LaunchControllerWindow();
                 }
             );
             notifyIcon.ContextMenu.MenuItems.Add(
@@ -214,6 +223,29 @@ namespace SteeringWheel
         }
 
         /// <summary>
+        /// controller button click callback
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ControllerButton_Click(object sender, RoutedEventArgs e)
+        {
+            LaunchControllerWindow();
+        }
+
+        /// <summary>
+        /// launch controller window
+        /// </summary>
+        private void LaunchControllerWindow()
+        {
+            ControllerWindow controllerWindow = new ControllerWindow(this)
+            {
+                ShowInTaskbar = false,
+                Owner = this
+            };
+            controllerWindow.ShowDialog();
+        }
+
+        /// <summary>
         /// configure button click callback
         /// </summary>
         /// <param name="sender"></param>
@@ -224,13 +256,15 @@ namespace SteeringWheel
         }
 
         /// <summary>
-        /// launch configure window
+        /// launch configuration window
         /// </summary>
         private void LaunchConfigureWindow()
         {
-            ConfigureWindow configureWindow = new ConfigureWindow(this);
-            configureWindow.ShowInTaskbar = false;
-            configureWindow.Owner = this;
+            ConfigureWindow configureWindow = new ConfigureWindow(controllerService)
+            {
+                ShowInTaskbar = false,
+                Owner = this
+            };
             configureWindow.ShowDialog();
         }
 

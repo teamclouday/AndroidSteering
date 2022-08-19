@@ -1,5 +1,6 @@
 ﻿using System.Windows;
-using System.Windows.Controls;
+using System.Windows.Input;
+using Xceed.Wpf.Toolkit;
 
 namespace SteeringWheel
 {
@@ -8,63 +9,75 @@ namespace SteeringWheel
     /// </summary>
     public partial class ConfigureWindow : Window
     {
-        private readonly MainWindow mainWindow;
+        private readonly Controller controllerService;
 
-        public ConfigureWindow(MainWindow window)
+        public ConfigureWindow(Controller controller)
         {
+            controllerService = controller;
             InitializeComponent();
-            mainWindow = window;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ConfigureWindow_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("A")) mainWindow.ControllerClick(ControlButton.A);
-            else if (key.Equals("B")) mainWindow.ControllerClick(ControlButton.B);
-            else if (key.Equals("X")) mainWindow.ControllerClick(ControlButton.X);
-            else if (key.Equals("Y")) mainWindow.ControllerClick(ControlButton.Y);
-            else if (key.Equals("LB")) mainWindow.ControllerClick(ControlButton.LB);
-            else if (key.Equals("RB")) mainWindow.ControllerClick(ControlButton.RB);
-            else if (key.Equals("Back")) mainWindow.ControllerClick(ControlButton.BACK);
-            else if (key.Equals("Start")) mainWindow.ControllerClick(ControlButton.START);
-            else if (key.Equals("Home")) mainWindow.ControllerClick(ControlButton.HOME);
-            else if (key.Equals("↑")) mainWindow.ControllerClick(ControlAxis.POVUp);
-            else if (key.Equals("↓")) mainWindow.ControllerClick(ControlAxis.POVDown);
-            else if (key.Equals("←")) mainWindow.ControllerClick(ControlAxis.POVLeft);
-            else if (key.Equals("→")) mainWindow.ControllerClick(ControlAxis.POVRight);
-            else if (key.Equals("LT")) mainWindow.ControllerClick(ControlAxis.Z);
-            else if (key.Equals("RT")) mainWindow.ControllerClick(ControlAxis.ZRot);
+            DefaultGrid.Focus();
         }
 
-        /// <summary>
-        /// left stick button
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ButtonLeft_Click(object sender, RoutedEventArgs e)
+        protected override void OnKeyDown(KeyEventArgs e)
         {
-            string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("Horizontal")) mainWindow.ControllerClick(ControlAxis.X);
-            else if (key.Equals("Vertical")) mainWindow.ControllerClick(ControlAxis.Y);
-            else if (key.Equals("Press")) mainWindow.ControllerClick(ControlButton.LS);
+            base.OnKeyDown(e);
+            if (e.Key == Key.Return)
+            {
+                DefaultGrid.Focus();
+                Keyboard.ClearFocus();
+            }
         }
 
-        /// <summary>
-        /// right stick buttons
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ButtonRight_Click(object sender, RoutedEventArgs e)
+        private void ControlSteeringMinMax_LowerValueChanged(object sender, RoutedEventArgs e)
         {
-            string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("Horizontal")) mainWindow.ControllerClick(ControlAxis.XRot);
-            else if (key.Equals("Vertical")) mainWindow.ControllerClick(ControlAxis.YRot);
-            else if (key.Equals("Press")) mainWindow.ControllerClick(ControlButton.RS);
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_SteeringMin = (float)item.LowerValue;
+            }
+        }
+
+        private void ControlSteeringMinMax_HigherValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_SteeringMax = (float)item.HigherValue;
+            }
+        }
+
+        private void ControlAccMinMax_LowerValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_AccMin = (float)item.LowerValue;
+            }
+        }
+
+        private void ControlAccMinMax_HigherValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_AccMax = (float)item.HigherValue;
+            }
+        }
+
+        private void ControlAccRestMinMax_LowerValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_AccRestMin = (float)item.LowerValue;
+            }
+        }
+
+        private void ControlAccRestMinMax_HigherValueChanged(object sender, RoutedEventArgs e)
+        {
+            if (e.Source is RangeSlider item && item != null)
+            {
+                controllerService.CAP_AccRestMax = (float)item.HigherValue;
+            }
         }
     }
 }

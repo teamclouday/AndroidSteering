@@ -73,7 +73,7 @@ namespace SteeringWheel
     /// <summary>
     /// Controller service
     /// </summary>
-    class Controller
+    public class Controller
     {
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;
@@ -81,9 +81,13 @@ namespace SteeringWheel
         private Thread updateThread;
         private readonly int MAX_WAIT_TIME = 1500;
         private bool isProcessAllowed = false;
-        private readonly float CAP_Steering = 45.0f; //treat max angle as 60 even though it can reach 90
-        private readonly float CAP_AccForward = 90.0f;
-        private readonly float CAP_AccBackward = 30.0f;
+
+        public float CAP_SteeringMin { get; set; } = -60.0f;
+        public float CAP_SteeringMax { get; set; } = 60.0f;
+        public float CAP_AccMin { get; set; } = -30.0f;
+        public float CAP_AccMax { get; set; } = 90.0f;
+        public float CAP_AccRestMin { get; set; } = 30.0f;
+        public float CAP_AccRestMax { get; set; } = 40.0f;
 
         // vjoy related
         private readonly vJoy joystick;
@@ -239,7 +243,7 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessAcceleration(float val)
         {
-            if (40.0f >= val && val >= 30.0f)
+            if (val >= CAP_AccRestMin && val <= CAP_AccRestMax)
             {
                 lock (joyReportLock)
                 {
@@ -247,10 +251,10 @@ namespace SteeringWheel
                     joyReport.AxisZRot = 0;
                 }
             }
-            else if (val > 40.0f)
+            else if (val > CAP_AccRestMax)
             {
                 // forward
-                float step = FilterLinear(val, 40.0f, CAP_AccForward);
+                float step = FilterLinear(val, CAP_AccRestMax, CAP_AccMax);
                 val = axisMax * step;
                 lock (joyReportLock)
                 {
@@ -258,10 +262,10 @@ namespace SteeringWheel
                     joyReport.AxisZRot = (int)val;
                 }
             }
-            else // val < 30.0f
+            else // val < CAP_AccRestMin
             {
                 // backward
-                float step = FilterLinear(-val, -30.0f, CAP_AccBackward);
+                float step = FilterLinear(-val, CAP_AccMin, CAP_AccRestMin);
                 val = axisMax * step;
                 lock (joyReportLock)
                 {
@@ -277,7 +281,7 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessSteering(float val)
         {
-            float step = FilterLinear(-val, -CAP_Steering, CAP_Steering);
+            float step = FilterLinear(-val, CAP_SteeringMin, CAP_SteeringMax);
             val = axisMax * step;
             lock (joyReportLock)
             {

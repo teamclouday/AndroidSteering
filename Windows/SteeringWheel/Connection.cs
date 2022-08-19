@@ -123,7 +123,7 @@ namespace SteeringWheel
     /// <summary>
     /// Connection service
     /// </summary>
-    class Connection
+    public class Connection
     {
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;

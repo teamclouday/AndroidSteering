@@ -3,51 +3,47 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:local="clr-namespace:SteeringWheel"
         mc:Ignorable="d"
         ResizeMode="CanMinimize"
         Background="LightSkyBlue"
-        Title="Configure Controller Buttons" Height="600" Width="800">
-    <Grid>
-        <Image HorizontalAlignment="Center" Margin="0" VerticalAlignment="Center" Stretch="Uniform" Width="500" Source="pack://application:,,,/SteeringWheel;component/controller.png"/>
-        <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Margin="250,50,0,0" Cursor="Hand" Click="Button_Click">LT</Button>
-        <Button HorizontalAlignment="Right" VerticalAlignment="Top" FontSize="18" Width="50" Margin="0,50,250,0" Cursor="Hand" Click="Button_Click">RT</Button>
-        <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Margin="180,80,0,0" Cursor="Hand" Click="Button_Click">LB</Button>
-        <Button HorizontalAlignment="Right" VerticalAlignment="Top" FontSize="18" Width="50" Margin="0,80,180,0" Cursor="Hand" Click="Button_Click">RB</Button>
+        Title="Configurations" Height="400" Width="600"
+        MouseDown="ConfigureWindow_MouseDown">
+    <Grid Focusable="True" x:Name="DefaultGrid">
+        <Label VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,40,0,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" Width="400"
+               FontSize="16">Steering Angles</Label>
+        <DockPanel Margin="0,80,0,0" VerticalAlignment="Top" ToolTip="Steering Min Max Angles" ToolTipService.ShowDuration="2000" Width="400">
+            <TextBox DockPanel.Dock="Left" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlSteeringMinMax, Path=LowerValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+            <xctk:RangeSlider x:Name="ControlSteeringMinMax" HorizontalAlignment="Center" VerticalAlignment="Top" Minimum="-90.0" Maximum="90.0" HigherValue="60.0" LowerValue="-60.0"
+                              Height="20" Width="300" Step="1.0" LowerValueChanged="ControlSteeringMinMax_LowerValueChanged" HigherValueChanged="ControlSteeringMinMax_HigherValueChanged"/>
+            <TextBox DockPanel.Dock="Right" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlSteeringMinMax, Path=HigherValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+        </DockPanel>
 
-        <Button HorizontalAlignment="Center" VerticalAlignment="Top" FontSize="18" Width="80" Margin="0,80,0,0" Cursor="Hand" Click="Button_Click">Home</Button>
+        <Label VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,140,0,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" Width="400"
+               FontSize="16">Acceleration Angles</Label>
+        <DockPanel Margin="0,180,0,0" VerticalAlignment="Top" ToolTip="Acceleration Min Max Angles" ToolTipService.ShowDuration="2000" Width="400">
+            <TextBox DockPanel.Dock="Left" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlAccMinMax, Path=LowerValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+            <xctk:RangeSlider x:Name="ControlAccMinMax" HorizontalAlignment="Center" VerticalAlignment="Top" Minimum="-90.0" Maximum="90.0" HigherValue="90.0" LowerValue="-30.0"
+                              Height="20" Width="300" Step="1.0" LowerValueChanged="ControlAccMinMax_LowerValueChanged" HigherValueChanged="ControlAccMinMax_HigherValueChanged"/>
+            <TextBox DockPanel.Dock="Right" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlAccMinMax, Path=HigherValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+        </DockPanel>
 
-        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="50,160,0,0">
-            <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="18">Left Stick</Label>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonLeft_Click">Horizontal</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonLeft_Click">Vertical</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonLeft_Click">Press</Button>
-        </StackPanel>
-
-        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,260,20,0">
-            <Label HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontSize="18">Right Stick</Label>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonRight_Click">Horizontal</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonRight_Click">Vertical</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="100" Cursor="Hand" Click="ButtonRight_Click">Press</Button>
-        </StackPanel>
-
-        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,150,30,0">
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Foreground="Red" FontWeight="Bold" Cursor="Hand" Click="Button_Click">B</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Foreground="Green" FontWeight="Bold" Cursor="Hand" Click="Button_Click">A</Button>
-        </StackPanel>
-
-        <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,150,80,0">
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Foreground="SandyBrown" FontWeight="Bold" Cursor="Hand" Click="Button_Click">Y</Button>
-            <Button HorizontalAlignment="Left" VerticalAlignment="Top" FontSize="18" Width="50" Foreground="Blue" FontWeight="Bold" Cursor="Hand" Click="Button_Click">X</Button>
-        </StackPanel>
-
-        <Button HorizontalAlignment="Left" VerticalAlignment="Bottom" FontSize="18" Width="50" Margin="300,0,0,150" Cursor="Hand" Click="Button_Click">Back</Button>
-        <Button HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="18" Width="50" Margin="0,0,300,150" Cursor="Hand" Click="Button_Click">Start</Button>
-
-        <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="20" Width="30" Margin="0,0,0,80" FontWeight="Bold" Cursor="Hand" Click="Button_Click">↑</Button>
-        <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="20" Width="30" Margin="0,0,0,40" FontWeight="Bold" Cursor="Hand" Click="Button_Click">↓</Button>
-        <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="20" Width="30" Margin="0,0,80,60" FontWeight="Bold" Cursor="Hand" Click="Button_Click">←</Button>
-        <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" FontSize="20" Width="30" Margin="80,0,0,60" FontWeight="Bold" Cursor="Hand" Click="Button_Click">→</Button>
-
+        <Label VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,240,0,0" VerticalContentAlignment="Center" HorizontalContentAlignment="Left" Width="400"
+               FontSize="16">Acceleration Angles (Rest)</Label>
+        <DockPanel Margin="0,280,0,0" VerticalAlignment="Top" ToolTip="Acceleration Angles at Rest" ToolTipService.ShowDuration="2000" Width="400">
+            <TextBox DockPanel.Dock="Left" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlAccRestMinMax, Path=LowerValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+            <xctk:RangeSlider x:Name="ControlAccRestMinMax" HorizontalAlignment="Center" VerticalAlignment="Top"
+                              Minimum="{Binding ElementName=ControlAccMinMax, Path=LowerValue, UpdateSourceTrigger=PropertyChanged, StringFormat=N1}"
+                              Maximum="{Binding ElementName=ControlAccMinMax, Path=HigherValue, UpdateSourceTrigger=PropertyChanged, StringFormat=N1}" HigherValue="40.0" LowerValue="30.0"
+                              Height="20" Width="300" Step="1.0" LowerValueChanged="ControlAccRestMinMax_LowerValueChanged" HigherValueChanged="ControlAccRestMinMax_HigherValueChanged"/>
+            <TextBox DockPanel.Dock="Right" FontSize="16" Width="50" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                     Text="{Binding ElementName=ControlAccRestMinMax, Path=HigherValue, UpdateSourceTrigger=LostFocus, StringFormat=N1}"/>
+        </DockPanel>
     </Grid>
 </Window>
