@@ -82,15 +82,15 @@ namespace SteeringWheel
         private readonly int MAX_WAIT_TIME = 1500;
         private bool isProcessAllowed = false;
         private readonly float CAP_Steering = 45.0f; //treat max angle as 60 even though it can reach 90
-        private readonly float CAP_AccForward = 80.0f;
-        private readonly float CAP_AccBackward = 10.0f;
+        private readonly float CAP_AccForward = 90.0f;
+        private readonly float CAP_AccBackward = 30.0f;
 
         // vjoy related
         private readonly vJoy joystick;
         private vJoy.JoystickState joyReport;
         private readonly object joyReportLock = new object();
         private uint joystickID;
-        private long axisMax = 0;
+        private int axisMax = 0, axisMaxHalf = 0;
         public bool vJoyInitialized { get; private set; }
         private const int triggerInterval = 100;
         private const int updateInterval = 5;
@@ -239,7 +239,7 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessAcceleration(float val)
         {
-            if (-40.0f <= val && val <= -30.0f)
+            if (40.0f >= val && val >= 30.0f)
             {
                 lock (joyReportLock)
                 {
@@ -247,10 +247,10 @@ namespace SteeringWheel
                     joyReport.AxisZRot = 0;
                 }
             }
-            else if (-90.0f <= val && val < -40.0f)
+            else if (val > 40.0f)
             {
                 // forward
-                float step = FilterLinear(-val, 40.0f, CAP_AccForward);
+                float step = FilterLinear(val, 40.0f, CAP_AccForward);
                 val = axisMax * step;
                 lock (joyReportLock)
                 {
@@ -258,10 +258,10 @@ namespace SteeringWheel
                     joyReport.AxisZRot = (int)val;
                 }
             }
-            else if (-30.0f < val && val <= 90.0f)
+            else // val < 30.0f
             {
                 // backward
-                float step = FilterLinear(val, -30.0f, CAP_AccBackward);
+                float step = FilterLinear(-val, -30.0f, CAP_AccBackward);
                 val = axisMax * step;
                 lock (joyReportLock)
                 {
@@ -277,34 +277,6 @@ namespace SteeringWheel
         /// <param name="val"></param>
         private void ProcessSteering(float val)
         {
-            //if(-2.0f <= val && val <= 2.0f)
-            //{
-            //    // set to rest mode
-            //    lock (joyReportLock)
-            //    {
-            //        joyReport.AxisX = (int)(axisMax / 2);
-            //    }
-            //}
-            //else if(2.0f < val && val <= 90.0f)
-            //{
-            //    // turning left
-            //    float step = FilterSmoothStep(val, 2.0f, CAP_Steering);
-            //    float half = axisMax / 2.0f * step;
-            //    lock (joyReportLock)
-            //    {
-            //        joyReport.AxisX = (int)(axisMax / 2.0f - half);
-            //    }
-            //}
-            //else if(-90.0f <= val && val < -2.0f)
-            //{
-            //    // turning right
-            //    float step = FilterSmoothStep(-val, 2.0f, CAP_Steering);
-            //    float half = axisMax / 2.0f * step;
-            //    lock (joyReportLock)
-            //    {
-            //        joyReport.AxisX = (int)(axisMax / 2.0f + half);
-            //    }
-            //}
             float step = FilterLinear(-val, -CAP_Steering, CAP_Steering);
             val = axisMax * step;
             lock (joyReportLock)
@@ -331,7 +303,10 @@ namespace SteeringWheel
                     if (CheckDeviceSpecs(i))
                     {
                         joystickID = i;
-                        joystick.GetVJDAxisMax(joystickID, HID_USAGES.HID_USAGE_X, ref axisMax);
+                        long val = 0L;
+                        joystick.GetVJDAxisMax(joystickID, HID_USAGES.HID_USAGE_X, ref val);
+                        axisMax = (int)val;
+                        axisMaxHalf = axisMax >> 1;
                         joyReport.bDevice = (byte)joystickID;
                         ResetVJoy();
                         AddLog("vJoy valid device found\nID = " + joystickID);
@@ -354,10 +329,10 @@ namespace SteeringWheel
         {
             joystick.ResetAll();
             joyReport.bHats = 0xFFFFFFFF;
-            joyReport.AxisX = (int)(axisMax / 2.0f);
-            joyReport.AxisXRot = (int)(axisMax / 2.0f);
-            joyReport.AxisY = (int)(axisMax / 2.0f);
-            joyReport.AxisYRot = (int)(axisMax / 2.0f);
+            joyReport.AxisX = axisMaxHalf;
+            joyReport.AxisXRot = axisMaxHalf;
+            joyReport.AxisY = axisMaxHalf;
+            joyReport.AxisYRot = axisMaxHalf;
             joyReport.AxisZ = 0;
             joyReport.AxisZRot = 0;
             joystick.UpdateVJD(joystickID, ref joyReport);
@@ -441,10 +416,10 @@ namespace SteeringWheel
                             joyReport.AxisYRot = 0;
                             break;
                         case ControlAxis.Z:
-                            joyReport.AxisZ = (int)(axisMax / 2);
+                            joyReport.AxisZ = axisMaxHalf;
                             break;
                         case ControlAxis.ZRot:
-                            joyReport.AxisZRot = (int)(axisMax / 2);
+                            joyReport.AxisZRot = axisMaxHalf;
                             break;
                     }
                 }
@@ -460,16 +435,16 @@ namespace SteeringWheel
                             joyReport.bHats = 0xFFFFFFFF;
                             break;
                         case ControlAxis.X:
-                            joyReport.AxisX = (int)(axisMax / 2);
+                            joyReport.AxisX = axisMaxHalf;
                             break;
                         case ControlAxis.XRot:
-                            joyReport.AxisXRot = (int)(axisMax / 2);
+                            joyReport.AxisXRot = axisMaxHalf;
                             break;
                         case ControlAxis.Y:
-                            joyReport.AxisY = (int)(axisMax / 2);
+                            joyReport.AxisY = axisMaxHalf;
                             break;
                         case ControlAxis.YRot:
-                            joyReport.AxisYRot = (int)(axisMax / 2);
+                            joyReport.AxisYRot = axisMaxHalf;
                             break;
                         case ControlAxis.Z:
                             joyReport.AxisZ = 0;

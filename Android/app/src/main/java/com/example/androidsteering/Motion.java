@@ -60,8 +60,8 @@ public class Motion implements SensorEventListener {
     private final float[] rotationMatrix = new float[9];
     private final float[] orientationMatrix = new float[3];
 
-    private float motionPitch = 0.0f;
-    private float motionRoll = 0.0f;
+    private volatile float motionPitch = 0.0f;
+    private volatile float motionRoll = 0.0f;
 
     public static final float LTVal = 0.0f;
     public static final float RTVal = -70.0f;
@@ -108,14 +108,12 @@ public class Motion implements SensorEventListener {
         SensorManager.getOrientation(rotationMatrix, orientationMatrix);
 
         float pitch = (float) Math.toDegrees(orientationMatrix[1]);
-        float roll = (float) Math.abs(Math.toDegrees(orientationMatrix[2])) - 90;
+        float roll = (float) (Math.toDegrees(orientationMatrix[2]) + 90.0);
 
         updatePitch(pitch);
         updateRoll(roll);
 
         globalBuffer.addData(readPitch(), readRoll());
-
-//        Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor data update");
     }
 
     // update pitch
