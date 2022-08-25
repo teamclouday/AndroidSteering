@@ -18,8 +18,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -65,10 +65,12 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             try {
                 if (controllerMode == ControllerMode.Default || controllerMode == ControllerMode.Alter) {
-                    TextView vHorizontal = findViewById(R.id.textViewAngleHori);
-                    TextView vVertical = findViewById(R.id.textViewAngleVert);
-                    vHorizontal.setText(String.format("%5.0f", serviceMotion.readRoll()));
-                    vVertical.setText(String.format("%5.0f", serviceMotion.readPitch()));
+                    ProgressBar vHorizontal = findViewById(R.id.progressBarAcc);
+                    ProgressBar vVertical = findViewById(R.id.progressBarSteer);
+                    float progressHorizontal = (serviceMotion.readRoll() + 90.0f) / 180.0f * 100.0f;
+                    float progressVertical = (180.0f - serviceMotion.readPitch()) / 360.0f * 100.0f;
+                    vHorizontal.setProgress((int) progressHorizontal);
+                    vVertical.setProgress((int) progressVertical);
                 } else if (controllerMode == ControllerMode.GamePad) {
                     // in GamePad mode, fill with fake data, so that button signal can be sent faster
                     globalBuffer.addData(0, 0.0f);

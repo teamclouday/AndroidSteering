@@ -48,13 +48,16 @@
             android:layout_margin="20dp"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textViewAngleHori"
+            <ProgressBar
+                android:id="@+id/progressBarAcc"
+                style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="TextView"
-                android:textAlignment="center" />
+                android:max="100"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:progress="50"
+                android:scaleY="2.0" />
 
             <Button
                 android:layout_width="match_parent"
@@ -82,13 +85,16 @@
             android:layout_margin="20dp"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textViewAngleVert"
+            <ProgressBar
+                android:id="@+id/progressBarSteer"
+                style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="TextView"
-                android:textAlignment="center" />
+                android:max="100"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:progress="50"
+                android:scaleY="2.0" />
 
             <Button
                 android:layout_width="wrap_content"
