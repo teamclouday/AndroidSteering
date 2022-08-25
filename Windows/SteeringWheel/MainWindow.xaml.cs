@@ -43,6 +43,17 @@ namespace SteeringWheel
             Debug.AutoFlush = true;
             // raise process priority to keep connection stable
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
+            // load settings
+            if (Properties.Settings.Default.MainWindowIsBluetoothSelected)
+            {
+                connectionService.mode = ConnectionMode.Bluetooth;
+                RadioButtonBluetooth.IsChecked = true;
+            }
+            else
+            {
+                connectionService.mode = ConnectionMode.Wifi;
+                RadioButtonWifi.IsChecked = true;
+            }
         }
 
         /// <summary>
@@ -50,10 +61,7 @@ namespace SteeringWheel
         /// </summary>
         private void SetupNotifyIcon()
         {
-            using (System.IO.Stream iconStream = Application.GetResourceStream(new Uri("pack://application:,,,/SteeringWheel;component/gamepad.ico", UriKind.Absolute)).Stream)
-            {
-                notifyIcon.Icon = new System.Drawing.Icon(iconStream);
-            }
+            notifyIcon.Icon = Properties.Resources.gamepad;
             notifyIcon.Visible = true;
             notifyIcon.DoubleClick +=
                 delegate (object sender, EventArgs e)
@@ -107,6 +115,7 @@ namespace SteeringWheel
                 if (!disconnectThread.Join(MAX_WAIT_TIME)) disconnectThread.Abort();
             }
             notifyIcon.Dispose();
+            Properties.Settings.Default.Save();
         }
 
         /// <summary>
@@ -238,7 +247,7 @@ namespace SteeringWheel
         /// </summary>
         private void LaunchControllerWindow()
         {
-            ControllerWindow controllerWindow = new ControllerWindow(this)
+            ControllerWindow controllerWindow = new ControllerWindow(controllerService)
             {
                 ShowInTaskbar = false,
                 Owner = this
@@ -276,8 +285,16 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private void RadioButton_Click(object sender, RoutedEventArgs e)
         {
-            if ((sender as RadioButton) == RadioButtonBluetooth) connectionService.mode = ConnectionMode.Bluetooth;
-            else if ((sender as RadioButton) == RadioButtonWifi) connectionService.mode = ConnectionMode.Wifi;
+            if ((sender as RadioButton) == RadioButtonBluetooth)
+            {
+                connectionService.mode = ConnectionMode.Bluetooth;
+                Properties.Settings.Default.MainWindowIsBluetoothSelected = true;
+            }
+            else if ((sender as RadioButton) == RadioButtonWifi)
+            {
+                connectionService.mode = ConnectionMode.Wifi;
+                Properties.Settings.Default.MainWindowIsBluetoothSelected = false;
+            }
         }
 
         /// <summary>

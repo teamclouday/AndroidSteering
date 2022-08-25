@@ -14,6 +14,7 @@ namespace SteeringWheel
         public SelectNetworkWindow(List<Tuple<string, string>> addresses)
         {
             InitializeComponent();
+            selectedIdx = Properties.Settings.Default.SelectNetworkWindowIndex;
             if (selectedIdx >= addresses.Count)
                 selectedIdx = 0;
             // populate combobox list
@@ -27,6 +28,7 @@ namespace SteeringWheel
         private void NetworkAddressList_DropDownClosed(object sender, EventArgs e)
         {
             selectedIdx = NetworkAddressList.SelectedIndex;
+            Properties.Settings.Default.SelectNetworkWindowIndex = selectedIdx;
         }
 
         // OK button clicked

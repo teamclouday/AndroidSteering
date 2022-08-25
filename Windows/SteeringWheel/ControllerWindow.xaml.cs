@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace SteeringWheel
@@ -8,12 +9,35 @@ namespace SteeringWheel
     /// </summary>
     public partial class ControllerWindow : Window
     {
-        private readonly MainWindow mainWindow;
+        private readonly Controller controller;
 
-        public ControllerWindow(MainWindow window)
+        private readonly Dictionary<string, ControlButton> controlButtonNameMap = new Dictionary<string, ControlButton>()
+        {
+            {"A", ControlButton.A },
+            {"B", ControlButton.B },
+            {"X", ControlButton.X },
+            {"Y", ControlButton.Y },
+            {"LB", ControlButton.LB },
+            {"RB", ControlButton.RB },
+            {"Back", ControlButton.BACK },
+            {"Start", ControlButton.START },
+            {"Home", ControlButton.HOME },
+        };
+
+        private readonly Dictionary<string, ControlAxis> controlAxisNameMap = new Dictionary<string, ControlAxis>()
+        {
+            {"↑", ControlAxis.POVUp },
+            {"↓", ControlAxis.POVDown },
+            {"←", ControlAxis.POVLeft },
+            {"→", ControlAxis.POVRight },
+            {"LT", ControlAxis.Z },
+            {"RT", ControlAxis.ZRot },
+        };
+
+        public ControllerWindow(Controller controller)
         {
             InitializeComponent();
-            mainWindow = window;
+            this.controller = controller;
         }
 
         /// <summary>
@@ -24,21 +48,10 @@ namespace SteeringWheel
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("A")) mainWindow.ControllerClick(ControlButton.A);
-            else if (key.Equals("B")) mainWindow.ControllerClick(ControlButton.B);
-            else if (key.Equals("X")) mainWindow.ControllerClick(ControlButton.X);
-            else if (key.Equals("Y")) mainWindow.ControllerClick(ControlButton.Y);
-            else if (key.Equals("LB")) mainWindow.ControllerClick(ControlButton.LB);
-            else if (key.Equals("RB")) mainWindow.ControllerClick(ControlButton.RB);
-            else if (key.Equals("Back")) mainWindow.ControllerClick(ControlButton.BACK);
-            else if (key.Equals("Start")) mainWindow.ControllerClick(ControlButton.START);
-            else if (key.Equals("Home")) mainWindow.ControllerClick(ControlButton.HOME);
-            else if (key.Equals("↑")) mainWindow.ControllerClick(ControlAxis.POVUp);
-            else if (key.Equals("↓")) mainWindow.ControllerClick(ControlAxis.POVDown);
-            else if (key.Equals("←")) mainWindow.ControllerClick(ControlAxis.POVLeft);
-            else if (key.Equals("→")) mainWindow.ControllerClick(ControlAxis.POVRight);
-            else if (key.Equals("LT")) mainWindow.ControllerClick(ControlAxis.Z);
-            else if (key.Equals("RT")) mainWindow.ControllerClick(ControlAxis.ZRot);
+            if (controlButtonNameMap.ContainsKey(key))
+                controller.TriggerControl(controlButtonNameMap[key]);
+            else if (controlAxisNameMap.ContainsKey(key))
+                controller.TriggerControl(controlAxisNameMap[key]);
         }
 
         /// <summary>
@@ -49,9 +62,9 @@ namespace SteeringWheel
         private void ButtonLeft_Click(object sender, RoutedEventArgs e)
         {
             string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("Horizontal")) mainWindow.ControllerClick(ControlAxis.X);
-            else if (key.Equals("Vertical")) mainWindow.ControllerClick(ControlAxis.Y);
-            else if (key.Equals("Press")) mainWindow.ControllerClick(ControlButton.LS);
+            if (key.Equals("Horizontal")) controller.TriggerControl(ControlAxis.X);
+            else if (key.Equals("Vertical")) controller.TriggerControl(ControlAxis.Y);
+            else if (key.Equals("Press")) controller.TriggerControl(ControlButton.LS);
         }
 
         /// <summary>
@@ -62,9 +75,9 @@ namespace SteeringWheel
         private void ButtonRight_Click(object sender, RoutedEventArgs e)
         {
             string key = (e.Source as Button).Content.ToString();
-            if (key.Equals("Horizontal")) mainWindow.ControllerClick(ControlAxis.XRot);
-            else if (key.Equals("Vertical")) mainWindow.ControllerClick(ControlAxis.YRot);
-            else if (key.Equals("Press")) mainWindow.ControllerClick(ControlButton.RS);
+            if (key.Equals("Horizontal")) controller.TriggerControl(ControlAxis.XRot);
+            else if (key.Equals("Vertical")) controller.TriggerControl(ControlAxis.YRot);
+            else if (key.Equals("Press")) controller.TriggerControl(ControlButton.RS);
         }
     }
 }

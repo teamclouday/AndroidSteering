@@ -8,21 +8,114 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-
-namespace SteeringWheel.Properties
-{
+namespace SteeringWheel.Properties {
+    
+    
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase
-    {
-
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.3.0.0")]
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
-
-        public static Settings Default
-        {
-            get
-            {
+        
+        public static Settings Default {
+            get {
                 return defaultInstance;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool MainWindowIsBluetoothSelected {
+            get {
+                return ((bool)(this["MainWindowIsBluetoothSelected"]));
+            }
+            set {
+                this["MainWindowIsBluetoothSelected"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int SelectNetworkWindowIndex {
+            get {
+                return ((int)(this["SelectNetworkWindowIndex"]));
+            }
+            set {
+                this["SelectNetworkWindowIndex"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-90")]
+        public float ConfigureWindowControlSteeringMin {
+            get {
+                return ((float)(this["ConfigureWindowControlSteeringMin"]));
+            }
+            set {
+                this["ConfigureWindowControlSteeringMin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("90")]
+        public float ConfigureWindowControlSteeringMax {
+            get {
+                return ((float)(this["ConfigureWindowControlSteeringMax"]));
+            }
+            set {
+                this["ConfigureWindowControlSteeringMax"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-30")]
+        public float ConfigureWindowControlAccMin {
+            get {
+                return ((float)(this["ConfigureWindowControlAccMin"]));
+            }
+            set {
+                this["ConfigureWindowControlAccMin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("80")]
+        public float ConfigureWindowControlAccMax {
+            get {
+                return ((float)(this["ConfigureWindowControlAccMax"]));
+            }
+            set {
+                this["ConfigureWindowControlAccMax"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
+        public float ConfigureWindowControlAccRestMin {
+            get {
+                return ((float)(this["ConfigureWindowControlAccRestMin"]));
+            }
+            set {
+                this["ConfigureWindowControlAccRestMin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("40")]
+        public float ConfigureWindowControlAccRestMax {
+            get {
+                return ((float)(this["ConfigureWindowControlAccRestMax"]));
+            }
+            set {
+                this["ConfigureWindowControlAccRestMax"] = value;
             }
         }
     }

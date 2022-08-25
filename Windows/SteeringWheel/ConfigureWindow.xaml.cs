@@ -10,11 +10,23 @@ namespace SteeringWheel
     public partial class ConfigureWindow : Window
     {
         private readonly Controller controllerService;
+        private bool initialized = false;
 
         public ConfigureWindow(Controller controller)
         {
             controllerService = controller;
             InitializeComponent();
+            // load settings
+            ControlSteeringMinMax.HigherValue = controller.CAP_SteeringMax = Properties.Settings.Default.ConfigureWindowControlSteeringMax;
+            ControlSteeringMinMax.LowerValue = controller.CAP_SteeringMin = Properties.Settings.Default.ConfigureWindowControlSteeringMin;
+
+            ControlAccMinMax.HigherValue = controller.CAP_AccMax = Properties.Settings.Default.ConfigureWindowControlAccMax;
+            ControlAccMinMax.LowerValue = controller.CAP_AccMin = Properties.Settings.Default.ConfigureWindowControlAccMin;
+
+            ControlAccRestMinMax.HigherValue = controller.CAP_AccRestMax = Properties.Settings.Default.ConfigureWindowControlAccRestMax;
+            ControlAccRestMinMax.LowerValue = controller.CAP_AccRestMin = Properties.Settings.Default.ConfigureWindowControlAccRestMin;
+
+            initialized = true;
         }
 
         private void ConfigureWindow_MouseDown(object sender, MouseButtonEventArgs e)
@@ -37,6 +49,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_SteeringMin = (float)item.LowerValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlSteeringMin = controllerService.CAP_SteeringMin;
             }
         }
 
@@ -45,6 +59,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_SteeringMax = (float)item.HigherValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlSteeringMax = controllerService.CAP_SteeringMax;
             }
         }
 
@@ -53,6 +69,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_AccMin = (float)item.LowerValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlAccMin = controllerService.CAP_AccMin;
             }
         }
 
@@ -61,6 +79,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_AccMax = (float)item.HigherValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlAccMax = controllerService.CAP_AccMax;
             }
         }
 
@@ -69,6 +89,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_AccRestMin = (float)item.LowerValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlAccRestMin = controllerService.CAP_AccRestMin;
             }
         }
 
@@ -77,6 +99,8 @@ namespace SteeringWheel
             if (e.Source is RangeSlider item && item != null)
             {
                 controllerService.CAP_AccRestMax = (float)item.HigherValue;
+                if (initialized)
+                    Properties.Settings.Default.ConfigureWindowControlAccRestMax = controllerService.CAP_AccRestMax;
             }
         }
     }

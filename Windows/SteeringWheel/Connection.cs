@@ -393,7 +393,10 @@ namespace SteeringWheel
                 return false;
             }
             // user selection
-            SelectNetworkWindow dialog = new SelectNetworkWindow(validAddresses);
+            SelectNetworkWindow dialog = new SelectNetworkWindow(validAddresses)
+            {
+                ShowInTaskbar = false
+            };
             if (dialog.ShowDialog() == true)
             {
                 var pair = validAddresses[dialog.selectedIdx];
