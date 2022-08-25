@@ -161,6 +161,7 @@ namespace SteeringWheel
                 case ConnectionStatus.Default:
                     if (connectThread == null || !connectThread.IsAlive)
                     {
+                        if (!connectionService.CheckWifi()) return;
                         LockRadioButtons();
                         connectThread = new Thread(() =>
                         {

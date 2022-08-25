@@ -1,0 +1,20 @@
+﻿<Window x:Class="SteeringWheel.SelectNetworkWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SteeringWheel"
+        mc:Ignorable="d"
+        Title="Select Network Adapter"
+        ResizeMode="CanMinimize"
+        Background="LightSkyBlue"
+        Height="250" Width="400">
+    <Grid>
+        <ComboBox x:Name="NetworkAddressList" Cursor="Hand" HorizontalAlignment="Center" Margin="0,50,0,0"
+                      VerticalAlignment="Top" FontSize="18" Width="250" DropDownClosed="NetworkAddressList_DropDownClosed"
+                      ToolTip="Select Network Address" ToolTipService.ShowDuration="2000">
+        </ComboBox>
+        <Button x:Name="OKButton" Cursor="Hand" Content="OK" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                    Margin="0,0,0,50" FontSize="18" Padding="6" Click="OKButton_Click" Width="150"/>
+    </Grid>
+</Window>

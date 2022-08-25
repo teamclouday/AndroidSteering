@@ -149,7 +149,8 @@ namespace SteeringWheel
         private Thread bthThread = null;
         // wifi components
         private readonly int wifiPort = 55555;
-        private IPAddress wifiAddress = IPAddress.Loopback;
+        private string wifiAddress;
+        private string wifiAdapterName;
         private IPEndPoint wifiTargetDeviceID = null;
         private Socket wifiServer = null;
         private Socket wifiClient = null;
@@ -348,41 +349,80 @@ namespace SteeringWheel
         }
 
         /// <summary>
+        /// check if wifi / LAN is properly set
+        /// </summary>
+        /// <returns></returns>
+        public bool CheckWifi()
+        {
+            if (mode != ConnectionMode.Wifi)
+                return true;
+            // get wifi IP address
+            // reference: https://stackoverflow.com/questions/9855230/how-do-i-get-the-network-interface-and-its-right-ipv4-address
+            wifiAddress = "";
+            wifiAdapterName = "";
+            List<Tuple<string, string>> validAddresses = new List<Tuple<string, string>>();
+            // get adapters
+            NetworkInterface[] nis = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (var ni in nis)
+            {
+                // skip unenabled adapters
+                if (ni.OperationalStatus != OperationalStatus.Up) continue;
+                // skip adapters that are not ethernet or wifi
+                if (ni.NetworkInterfaceType != NetworkInterfaceType.Ethernet &&
+                    ni.NetworkInterfaceType != NetworkInterfaceType.Wireless80211) continue;
+                // get IP properties
+                var props = ni.GetIPProperties();
+                // analyze addresses
+                foreach (var addr in props.UnicastAddresses)
+                {
+                    // select IPv4 except loopback
+                    if (addr.Address.AddressFamily == AddressFamily.InterNetwork &&
+                        !IPAddress.IsLoopback(addr.Address) && addr.IsDnsEligible)
+                    {
+                        wifiAdapterName = ni.Name;
+                        wifiAddress = addr.Address.ToString();
+                        validAddresses.Add(new Tuple<string, string>(wifiAdapterName, wifiAddress));
+                        Debug.WriteLine("[Connection] ConnectWifi -> new valid address " + wifiAddress);
+                    }
+                }
+            }
+            // check if at least 1 address is found
+            if (validAddresses.Count == 0)
+            {
+                AddLog("(wifi) No valid IPv4 network (Wifi/Ethernet) found");
+                return false;
+            }
+            // user selection
+            SelectNetworkWindow dialog = new SelectNetworkWindow(validAddresses);
+            if (dialog.ShowDialog() == true)
+            {
+                var pair = validAddresses[dialog.selectedIdx];
+                wifiAdapterName = pair.Item1;
+                wifiAddress = pair.Item2;
+                Debug.WriteLine("[Connection] ConnectWifi -> selected address " + wifiAddress);
+            }
+            return true;
+        }
+
+        /// <summary>
         /// connect with wifi server
         /// </summary>
         private void ConnectWifi()
         {
-            // get wifi IP address
-            // reference: https://stackoverflow.com/questions/9855230/how-do-i-get-the-network-interface-and-its-right-ipv4-address
-            bool IPfound = false;
-            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
-            {
-                if (IPfound) break;
-                if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 && ni.OperationalStatus == OperationalStatus.Up)
-                {
-                    foreach (UnicastIPAddressInformation ip in ni.GetIPProperties().UnicastAddresses)
-                    {
-                        if (ip.Address.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            wifiAddress = ip.Address;
-                            IPfound = true;
-                            break;
-                        }
-                    }
-                }
-            }
+            AddLog("(wifi) Server network adapter = " + wifiAdapterName);
             AddLog("(wifi) Server IP Address = " + wifiAddress.ToString());
             if (wifiServer != null) Disconnect();
             // create server and start listening
             try
             {
                 wifiServer = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                wifiServer.Bind(new IPEndPoint(wifiAddress, wifiPort));
+                wifiServer.Bind(new IPEndPoint(IPAddress.Parse(wifiAddress), wifiPort));
                 wifiServer.Listen(1); // 1 request at a time
             }
             catch (SocketException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                AddLog("(wifi) Server failed to start");
                 Disconnect();
                 return;
             }

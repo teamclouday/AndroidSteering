@@ -30,7 +30,7 @@ Please refer to the values showed on app and adjust your postion
 
 ### Connection Signals  
 
-The application will either try to connect a service with unique UUID via Bluetooth, or connect to Wifi hotspot on PC by IP address input.  
+The application will either try to connect a service with unique UUID via Bluetooth, or connect to local network on PC by IP address input.  
 
 The connection starts by a validation process, it sends `123456` to service, and expect a returned value of `654321`. After that, a connection will be established for later communication.  
 

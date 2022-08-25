@@ -27,7 +27,7 @@
                              HorizontalContentAlignment="Right" Cursor="Hand" x:Name="RadioButtonBluetooth" Click="RadioButton_Click">Bluetooth</RadioButton>
                 <RadioButton VerticalAlignment="Top" HorizontalAlignment="Center" FontSize="20" GroupName="connection"
                              VerticalContentAlignment="Center" UseLayoutRounding="False" Padding="10,-1,0,0" Width="150"
-                             HorizontalContentAlignment="Right" Cursor="Hand" x:Name="RadioButtonWifi" Click="RadioButton_Click">Wifi Hotspot</RadioButton>
+                             HorizontalContentAlignment="Right" Cursor="Hand" x:Name="RadioButtonWifi" Click="RadioButton_Click">Wifi / LAN</RadioButton>
             </StackPanel>
             <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" HorizontalContentAlignment="Center"
                     Margin="0,0,0,150" FontSize="22" Padding="5" Width="200" VerticalContentAlignment="Center"

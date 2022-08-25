@@ -7,9 +7,9 @@ Also a potential Xbox controller emulator
 
 ### Requirements  
 * Android mobile phone with bluetooth (or Wifi)  
-* Windows PC with bluetooth (or Wifi Hotspot)  
+* Windows PC with bluetooth (or Wifi/LAN)  
 * If bluetooth, phone and PC should be paired once  
-* If Wifi, phone should connect to PC's mobile hotspot  
+* If Wifi, phone should be under same network as PC (e.g. connect to same router)
 * vJoy driver installed on PC  
 
 ------
@@ -33,8 +33,8 @@ Also a potential Xbox controller emulator
   1. After installing apk on Android phone, tap upper left corner to see all options  
   2. Connection modes:  
      1. Bluetooth requires the phone to enable bluetooth and has already paired with  target PC at least once  
-     2. Wifi requires the phone to connect to the `Mobile Hotspot` of Windows PC (Or  at least in the same local network)  
-        When connecting, need to enter the same IP address displayed on PC app  
+     2. Wifi/LAN requires the phone to connect to the the same local network as Windows PC  
+        To connect, enter the same IP address displayed on PC app  
         If connection failed, check if [Windows PC firewall is blocking the app](https://pureinfotech.com/allow-apps-firewall-windows-10/)  
   3. Control options:  
      1. `Default`: phone motion controls both acceleration and steering  
@@ -93,6 +93,7 @@ See [Game Steering Wheel Settings](SETTINGS.md) for more details.
 - [x] Steering angle range supports -180 to 180
 - [ ] Slider bar on phone for LT/RT controls
 - [ ] Memorized user settings
+- [x] Connection under same network (does not have to be Wifi hotspot)
 
 ------
 
