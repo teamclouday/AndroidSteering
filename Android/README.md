@@ -67,7 +67,7 @@ __Motion Status__:
 
 ### Motion Angle Restoration
 
-Here's a world coordinate system I stole from [learnopengl](https://developer.android.com/guide/topics/sensors/sensors_overview#sensors-coords):\
+Here's a world coordinate system I stole from [learnopengl](https://learnopengl.com/Getting-started/Coordinate-Systems):\
 ![coordinate](https://learnopengl.com/img/getting-started/coordinate_systems_right_handed.png)
 
 In this app, the new angles / orientations are computed by a combination of [Accelerometer and Magnetic Field](https://developer.android.com/guide/topics/sensors/sensors_position#sensors-pos-orient), which are in absolute XYZ coordinate as shown in the image.
@@ -82,9 +82,9 @@ _We use the same world coordinate as previous image._
 3. Then user rotate around +Z' to steer car. The angle around +Z' is the expected angle.
 4. However, the motion sensor only captures the angle in absolute world space.
  
-If use this value from motion sensor directly, there'll be two bugs:\
+If use this value from motion sensor directly, there'll be two bugs:
 * The more the user accelerate car (rotate forward), the smaller the steering angle becomes, which is against instinct of how steering wheel works.
-* Once user steer by rotating the phone, acceleration angle will change.
+* Once user steers by rotating the phone, acceleration angle will change drastically.
 
 In my opinion, the steering angle should always be the angle on the plane where the wheel resides, and it should not affect acceleration angle.
 
