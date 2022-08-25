@@ -2,6 +2,7 @@
 
 package com.example.androidsteering;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
@@ -11,6 +12,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Process;
 import android.text.InputType;
 import android.util.Log;
@@ -159,6 +162,11 @@ public class Connection {
 
     // connect to bluetooth
     private String connectBluetooth() {
+        // check permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (mainActivity.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
+                return "Bluetooth is not permitted";
+        }
         // register receiver
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         filter.addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED);
@@ -227,17 +235,6 @@ public class Connection {
 
     // connect to wifi
     private String connectWifi() {
-        // prepare IP address
-//        WifiManager wm = (WifiManager) mainActivity.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-//        try{
-//            InetAddress address = InetAddress.getByAddress(
-//                    ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(wm.getConnectionInfo().getIpAddress()).array()
-//            );
-//            wifiAddress = address.getHostAddress();
-//        }catch(UnknownHostException e)
-//        {
-//            Log.d(mainActivity.getString(R.string.logTagConnection), "[connectWifi] -> " + e.getMessage());
-//        }
         // get IP address input
         AtomicBoolean decided = new AtomicBoolean(false);
         AtomicBoolean validAddress = new AtomicBoolean(false);
@@ -393,11 +390,17 @@ public class Connection {
         } catch (IOException e) {
             Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) Cannot create socket");
             return false;
+        } catch (SecurityException e) {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) " + e);
+            return false;
         }
         try {
             tmp.connect();
         } catch (IOException e) {
             Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) Cannot connect to device: " + device.getName());
+            return false;
+        } catch (SecurityException e) {
+            Log.d(mainActivity.getString(R.string.logTagConnection), "[testConnection](Bluetooth) " + e);
             return false;
         }
         AtomicBoolean isValid = new AtomicBoolean(false);
