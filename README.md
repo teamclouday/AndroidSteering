@@ -88,11 +88,11 @@ See [Game Steering Wheel Settings](SETTINGS.md) for more details.
 
 ### Feature Plans
 
-[x] Motion angle restoration (stable and natural steering control)\
-[x] Angle limits configuration\
-[x] Steering angle range supports -180 to 180\
-[ ] Slider bar on phone for LT/RT controls\
-[ ] Memorized user settings
+- [x] Motion angle restoration (stable and natural steering control)
+- [x] Angle limits configuration
+- [x] Steering angle range supports -180 to 180
+- [ ] Slider bar on phone for LT/RT controls
+- [ ] Memorized user settings
 
 ------
 
