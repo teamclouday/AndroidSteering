@@ -61,3 +61,36 @@ __Motion Status__:
   * `9` => Button `LEFT`
   * `10` => Button `BACK`
   * `11` => Button `START`
+
+
+------
+
+### Steering Angle Restoration
+
+Here's a world coordinate system I stole from [learnopengl](https://developer.android.com/guide/topics/sensors/sensors_overview#sensors-coords):\
+![coordinate](https://learnopengl.com/img/getting-started/coordinate_systems_right_handed.png)
+
+In this app, the new angles / orientations are computed by a combination of [Accelerometer and Magnetic Field](https://developer.android.com/guide/topics/sensors/sensors_position#sensors-pos-orient), which are in absolute XYZ coordinate as shown in the image.
+
+Now imagine this situation:
+
+<video src='../Assets/motionAngleDemo.mp4' width=800></video>
+
+_We use the same world coordinate as previous image._
+1. User starts by holding phone vertically straight, landscape mode.
+2. User first rotates phone forward (around X) to accelerate car. Then +Z follows the rotation to +Z' (keep vertical to the screen).
+3. Then user rotate around +Z' to steer car. The angle around +Z' is the expected angle.
+4. However, the motion sensor only captures the angle in absolute world space.
+ 
+If use this value from motion sensor directly, there'll be a bug:\
+The more the user accelerate car (rotate forward), the smaller the steering angle becomes, which is against instinct of how steering wheel works.\
+In my opinion, the steering angle should always be the angle on the plane where the wheel resides, and the plane cannot be assumed to be always vertical in this case.
+
+To restore true steering angle, here's the formula:
+```
+let x = acceleration angle (around X, from sensor)
+let y0 = steering angle (from sensor)
+let y1 = true steering angle (to compute)
+y1 = arcsin(sin(y0) / cos(x))
+```
+The math comes from some intense 3D imagination process in head 🤣 If you know any tools that can easily create & rotate lines in 3D space, please let me know!
