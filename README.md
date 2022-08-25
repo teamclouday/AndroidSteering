@@ -16,14 +16,20 @@ Also a potential Xbox controller emulator
 
 ### How to Use
 
-* __vJoy Driver__  
-  1. Make sure no physical controller is attached  
-  2. Download `vJoySetup.exe` from [vJoy sourceforge](https://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.1.8.39-270518/) and install (Recommended to check all 4 programs)  
-  3. Make sure no other program is capturing controller (e.g. Steam)  
-  4. Launch `Configure vJoy` and configure the device as following:  
-     <img src="Assets/vjoy.png" width="300" alt="vjoy configuration">
+<details>
+  <summary>vJoy Driver</summary>
 
-* __Android App__  
+1. Make sure no physical controller is attached  
+2. Download `vJoySetup.exe` from [vJoy sourceforge](https://sourceforge.net/projects/vjoystick/files/Beta%202.x/2.1.8.39-270518/) and install (Recommended to check all 4 programs)  
+3. Make sure no other program is capturing controller (e.g. Steam)  
+4. Launch `Configure vJoy` and configure the device as following:  
+   <img src="Assets/vjoy.png" width="300" alt="vjoy configuration">
+
+</details>
+
+<details>
+  <summary>Android App</summary>
+
   1. After installing apk on Android phone, tap upper left corner to see all options  
   2. Connection modes:  
      1. Bluetooth requires the phone to enable bluetooth and has already paired with  target PC at least once  
@@ -40,7 +46,11 @@ Also a potential Xbox controller emulator
      3. `GamePad`: no steering is enabled, but has more buttons  
         Used to control the rest of a game (such as menu, car view, etc.)  
 
-* __Windows App__  
+</details>
+
+<details>
+  <summary>Windows App</summary>
+ 
   1. Install Windows application  
   2. Minimizing the app will hide app to system tray (with a notification)  
   3. Left textbox contains all essential program notifications  
@@ -54,11 +64,35 @@ Also a potential Xbox controller emulator
   6. `Configure` button leads to the configuration page  
      It is used to configure buttons and stick axis in a game or steam when vJoy  controller is not recognized or has wrong settings  
 
+</details>
+
 ------
 
 ### For Games  
 
 By default, vJoy will use settings of xbox controller, for most modern games. Make sure to tweak in-game steering settings, because most games have been using stabilization algorithms to smooth out the steering axis input. Some may result in a lagging of steering, others may make steering extremely slow or fast.  
+
+See [Game Steering Wheel Settings](SETTINGS.md) for more details.
+
+<details>
+  <summary>Game Play Demos</summary>
+
+* [Assetto Corsa](https://www.bilibili.com/video/BV1XJ411C7R9) (version [1.0.0.6](https://github.com/teamclouday/AndroidSteering/releases/tag/1.0.0.6))  
+* [Assetto Corsa](https://www.bilibili.com/video/BV1Ee411s7Zr) (version [1.1.0.4](https://github.com/teamclouday/AndroidSteering/releases/tag/1.1.0.4))  
+* [Forza Horizon 4](https://www.bilibili.com/video/BV1oM4y1V7NK/) (version [2.0.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.0.0))  
+* [Assetto Corsa](https://www.bilibili.com/video/BV1jq4y1D7Ed/) (version [2.1.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.1.0))  
+
+</details>
+
+------
+
+### Feature Plans
+
+[x] Motion angle restoration (stable and natural steering control)\
+[x] Angle limits configuration\
+[x] Steering angle range supports -180 to 180\
+[ ] Slider bar on phone for LT/RT controls\
+[ ] Memorized user settings
 
 ------
 
@@ -68,29 +102,9 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 
 ------
 
-### Game Play Demos
-
-* [Assetto Corsa](https://www.bilibili.com/video/BV1XJ411C7R9) (version [1.0.0.6](https://github.com/teamclouday/AndroidSteering/releases/tag/1.0.0.6))  
-* [Assetto Corsa](https://www.bilibili.com/video/BV1Ee411s7Zr) (version [1.1.0.4](https://github.com/teamclouday/AndroidSteering/releases/tag/1.1.0.4))  
-* [Forza Horizon 4](https://www.bilibili.com/video/BV1oM4y1V7NK/) (version [2.0.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.0.0))  
-* [Assetto Corsa](https://www.bilibili.com/video/BV1jq4y1D7Ed/) (version [2.1.0](https://github.com/teamclouday/AndroidSteering/releases/tag/2.1.0))  
-
-[Game Steering Wheel Settings](SETTINGS.md)
-
-------
-
-### Potential Improvements  
-* Try other sigmoid-shape functions to improve motion control  
-  Right now using linear function for both steering & acceleration  
-* Learn more about real-time data transmission technologies  
-  The TCP socket is holding up data instead of sending it immediately, which results in a slightly lagging behavior  
-* Find alternatives to vJoy driver which supports more efficient real-time control feeding  
-
-------
-
 ### Screenshots  
 
-__Android Side__ (Dark Mode)  
+__Android Side__
 
 <img src="Assets/phone1.jpg" width="400" alt="phone1">
 
@@ -102,7 +116,7 @@ __Android Side__ (Dark Mode)
 
 <img src="Assets/phone5.jpg" width="400" alt="phone6">
 
-__Windows Side__  
+__Windows Side__
 
 <img src="Assets/pc1.png" width="600" alt="pc1">
 
