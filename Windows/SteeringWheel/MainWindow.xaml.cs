@@ -19,15 +19,35 @@ namespace SteeringWheel
         private readonly Controller controllerService;
 
         private readonly System.Windows.Forms.NotifyIcon notifyIcon;
+        private bool notifDisplayedOnce = false;
 
         private Thread connectThread;
         private Thread disconnectThread;
         private readonly int MAX_WAIT_TIME = 1500;
 
+        [System.Runtime.InteropServices.DllImport("User32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr handle);
+
         public MainWindow()
         {
-            InitializeComponent();
+            // avoid duplicate processes
+            Process[] processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+            if (processes.Length > 1)
+            {
+                int prevProcessIdx = 0;
+                while (prevProcessIdx < processes.Length &&
+                    processes[prevProcessIdx].Id == Process.GetCurrentProcess().Id)
+                    prevProcessIdx++;
+                if (prevProcessIdx < processes.Length)
+                {
+                    // bring previous process to foreground
+                    SetForegroundWindow(processes[prevProcessIdx].MainWindowHandle);
+                }
+                // close current process
+                Application.Current.Shutdown();
+            }
             // initialize components
+            InitializeComponent();
             sharedBuffer = new SharedBuffer();
             connectionService = new Connection(this, sharedBuffer);
             controllerService = new Controller(this, sharedBuffer);
@@ -126,7 +146,11 @@ namespace SteeringWheel
         {
             if (WindowState == WindowState.Minimized)
             {
-                notifyIcon.ShowBalloonTip(2000, "SteeringWheel", "App minimized to system tray", System.Windows.Forms.ToolTipIcon.Info);
+                if (!notifDisplayedOnce)
+                {
+                    notifyIcon.ShowBalloonTip(2000, "SteeringWheel", "App minimized to system tray", System.Windows.Forms.ToolTipIcon.Info);
+                    notifDisplayedOnce = true;
+                }
                 Hide();
             }
             base.OnStateChanged(e);
