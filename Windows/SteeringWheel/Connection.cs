@@ -18,13 +18,14 @@ namespace SteeringWheel
     /// </summary>
     public class SharedBuffer
     {
-        private const int MAX_SIZE = 5;
+        private const int MAX_SIZE = 10;
         private readonly List<MotionData> buffer = new List<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
             lock (buffer)
             {
-                if (v1 || buffer.Count <= MAX_SIZE)
+                if (v1 || v2 == (int)MotionStatus.ResetSteerAngle ||
+                    v2 == (int)MotionStatus.ResetAccAngle || buffer.Count <= MAX_SIZE)
                 {
                     buffer.Add(new MotionData()
                     {
@@ -40,7 +41,7 @@ namespace SteeringWheel
                     {
                         if (!buffer[idx].IsButton && buffer[idx].Status == v2)
                         {
-                            buffer[idx].Value = buffer[idx].Value * 0.4f + v3 * 0.6f; // take weighted average
+                            buffer[idx].Value = v3;
                             updated = true;
                             break;
                         }
