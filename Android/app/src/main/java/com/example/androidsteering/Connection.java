@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Process;
@@ -144,7 +145,7 @@ public class Connection {
     // wifi components
     private Socket wifiSocket;
     private Thread wifiThread;
-    public String wifiAddress = "192.168.137.";
+    public String wifiAddress = "192.168.0.";
     private final int wifiPort = 55555;
 
     public Connection(MainActivity activity, MyBuffer buffer) {
@@ -239,6 +240,10 @@ public class Connection {
         AtomicBoolean decided = new AtomicBoolean(false);
         AtomicBoolean validAddress = new AtomicBoolean(false);
         mainActivity.runOnUiThread(() -> {
+            final String USER_SETTINGS_DEFAULT_IP = "DEFAULT_IP";
+            final String PREFERENCES_NAME = "AndroidSteeringUserSettings";
+            SharedPreferences userSettings = mainActivity.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            wifiAddress = userSettings.getString(USER_SETTINGS_DEFAULT_IP, wifiAddress);
             // create alert dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(mainActivity);
             builder.setTitle("Set IP address displayed on PC");
@@ -252,6 +257,9 @@ public class Connection {
                 if (Patterns.IP_ADDRESS.matcher(ipInput.getText().toString()).matches()) {
                     if (!ipInput.getText().toString().isEmpty()) {
                         wifiAddress = ipInput.getText().toString();
+                        userSettings.edit()
+                                .putString(USER_SETTINGS_DEFAULT_IP, wifiAddress)
+                                .apply();
                         validAddress.set(true);
                     }
                     decided.set(true);

@@ -92,7 +92,7 @@ See [Game Steering Wheel Settings](SETTINGS.md) for more details.
 - [x] Angle limits configuration
 - [x] Steering angle range supports -180 to 180
 - [x] Slider bar on phone for LT/RT controls
-- [ ] Memorized user settings
+- [x] Memorized user settings
 - [x] Connection under same network (does not have to be Wifi hotspot)
 
 ------
