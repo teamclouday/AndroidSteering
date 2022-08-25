@@ -17,6 +17,17 @@ namespace SteeringWheel
     }
 
     /// <summary>
+    /// define motion status
+    /// </summary>
+    public enum MotionStatus
+    {
+        SetSteerAngle = 0,
+        SetAccAngle = 1,
+        ResetSteerAngle = 2,
+        ResetAccAngle = 3
+    }
+
+    /// <summary>
     /// define motion buttons
     /// </summary>
     public enum MotionButton
@@ -194,13 +205,19 @@ namespace SteeringWheel
                     }
                     else
                     {
-                        switch (data.Status)
+                        switch ((MotionStatus)data.Status)
                         {
-                            case 0:
+                            case MotionStatus.SetSteerAngle:
                                 ProcessSteering(data.Value);
                                 break;
-                            case 1:
+                            case MotionStatus.SetAccAngle:
                                 ProcessAcceleration(data.Value);
+                                break;
+                            case MotionStatus.ResetSteerAngle:
+                                ProcessSteering((CAP_SteeringMax + CAP_SteeringMin) * 0.5f);
+                                break;
+                            case MotionStatus.ResetAccAngle:
+                                ProcessAcceleration((CAP_AccRestMax + CAP_AccRestMin) * 0.5f);
                                 break;
                         }
                     }

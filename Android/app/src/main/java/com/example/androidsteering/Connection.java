@@ -43,8 +43,10 @@ public class Connection {
         public void addData(float pitch, float roll) {
             if (!running) return;
             synchronized (this) {
-                if (updatePitch) buff.add(new Motion.MyMove(false, 0, pitch));
-                if (updateRoll) buff.add(new Motion.MyMove(false, 1, roll));
+                if (updatePitch)
+                    buff.add(new Motion.MyMove(false, MotionStatus.SetSteerAngle.getVal(), pitch));
+                if (updateRoll)
+                    buff.add(new Motion.MyMove(false, MotionStatus.SetAccAngle.getVal(), roll));
                 int idx = buff.size() - 1;
                 while (buff.size() > MAX_SIZE && idx >= 0) {
                     if (!buff.get(idx).MotionButton)

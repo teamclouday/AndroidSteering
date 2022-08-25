@@ -72,13 +72,16 @@ public class MainActivity extends AppCompatActivity {
                     vHorizontal.setProgress((int) progressHorizontal);
                     vVertical.setProgress((int) progressVertical);
                 } else if (controllerMode == ControllerMode.GamePad) {
-                    // in GamePad mode, fill with fake data, so that button signal can be sent faster
-                    globalBuffer.addData(0, 0.0f);
+                    // in GamePad mode, fill some fake data, so that button signal can be sent faster
+                    globalBuffer.addData(MotionStatus.SetSteerAngle.getVal(), 0.0f);
                 }
                 if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
-                    if (!LTPressed && !RTPressed) globalBuffer.addData(1, Motion.LTRTValUp);
-                    if (LTPressed) globalBuffer.addData(1, Motion.LTValDown);
-                    if (RTPressed) globalBuffer.addData(1, Motion.RTValDown);
+                    if (!LTPressed && !RTPressed)
+                        globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
+                    if (LTPressed)
+                        globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.LTValDown);
+                    if (RTPressed)
+                        globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.RTValDown);
                 }
             } catch (Exception e) {
                 Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
@@ -334,8 +337,8 @@ public class MainActivity extends AppCompatActivity {
 
     // send data to reset controller motion status
     public void resetController() {
-        globalBuffer.addData(0, 0.0f);
-        globalBuffer.addData(1, Motion.LTRTValUp);
+        globalBuffer.addData(MotionStatus.ResetSteerAngle.getVal(), 0.0f);
+        globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
     }
 
     // callback for rest buttons
@@ -391,13 +394,13 @@ public class MainActivity extends AppCompatActivity {
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(1, Motion.LTValDown);
+                globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.LTValDown);
                 LTPressed = true;
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
                 LTPressed = false;
-                globalBuffer.addData(1, Motion.LTRTValUp);
+                globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
                 return true;
         }
         return false;
@@ -407,12 +410,12 @@ public class MainActivity extends AppCompatActivity {
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(1, Motion.RTValDown);
+                globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.RTValDown);
                 RTPressed = true;
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
-                globalBuffer.addData(1, Motion.LTRTValUp);
+                globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
                 RTPressed = false;
                 return true;
         }

@@ -12,6 +12,23 @@ import android.util.Log;
 
 import androidx.core.math.MathUtils;
 
+enum MotionStatus {
+    SetSteerAngle(0),
+    SetAccAngle(1),
+    ResetSteerAngle(2),
+    ResetAccAngle(3);
+
+    private final int val;
+
+    MotionStatus(int v) {
+        val = v;
+    }
+
+    public int getVal() {
+        return val;
+    }
+}
+
 enum MotionButton {
     X(0),
     Y(1),
@@ -66,14 +83,13 @@ public class Motion implements SensorEventListener {
     private volatile float motionPitch = 0.0f;
     private volatile float motionRoll = 0.0f;
 
-    public static final float LTValDown = 0.0f;
-    public static final float RTValDown = -70.0f;
-    public static final float LTRTValUp = -30.0f;
+    public static final float LTValDown = -90.0f;
+    public static final float RTValDown = 90.0f;
 
     private Thread dataSubmitThread = null;
     private volatile boolean dataSubmitShouldStop;
     private final int MAX_WAIT_TIME = 1000;
-    private final int DATA_UPDATE_FREQ = 20; // wait for milliseconds for next update
+    private final int DATA_UPDATE_FREQ = 5; // wait for milliseconds for next update
 
     public Motion(MainActivity activity, Connection.MyBuffer buffer) {
         mainActivity = activity;
@@ -146,11 +162,18 @@ public class Motion implements SensorEventListener {
         // compute real roll (horizontal rotation, or acceleration angle)
         double roll = Math.asin(MathUtils.clamp(Math.sin(Math.PI * 0.5 + orientation[2]) * Math.cos(orientation[1]), -1.0, 1.0));
         // to compute the real pitch (vertical rotation, or steering angle)
-        double pitch = Math.asin(MathUtils.clamp(Math.sin(orientation[1]) / Math.cos(roll), -1.0, 1.0));
+        double rollCosInv = Math.cos(roll);
+        rollCosInv = rollCosInv == 0.0 ? 0.0 : 1.0 / rollCosInv;
+        double pitch = Math.asin(MathUtils.clamp(Math.sin(orientation[1]) * rollCosInv, -1.0, 1.0));
 
         // for steering, check whether it is over 90 degrees either side
         if (orientation[2] > 0.0)
             pitch = pitch > 0.0 ? Math.PI - Math.abs(pitch) : Math.abs(pitch) - Math.PI;
+
+//        Log.d("MotionDebug", String.format("[%4.0f,%4.0f,%4.0f] - %4.0f, %4.0f",
+//                Math.toDegrees(orientation[0]), Math.toDegrees(orientation[1]), Math.toDegrees(orientation[2]),
+//                Math.toDegrees(pitch), Math.toDegrees(roll)
+//        ));
 
         updatePitch((float) Math.toDegrees(pitch));
         updateRoll((float) Math.toDegrees(roll));
