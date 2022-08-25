@@ -24,7 +24,8 @@ namespace SteeringWheel
         SetSteerAngle = 0,
         SetAccAngle = 1,
         ResetSteerAngle = 2,
-        ResetAccAngle = 3
+        ResetAccAngle = 3,
+        SetAccRatio = 4
     }
 
     /// <summary>
@@ -218,6 +219,24 @@ namespace SteeringWheel
                                 break;
                             case MotionStatus.ResetAccAngle:
                                 ProcessAcceleration((CAP_AccRestMax + CAP_AccRestMin) * 0.5f);
+                                break;
+                            case MotionStatus.SetAccRatio:
+                                if (data.Value > 0.0f)
+                                {
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisZ = 0;
+                                        joyReport.AxisZRot = (int)(data.Value * axisMax);
+                                    }
+                                }
+                                else
+                                {
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisZ = (int)(-data.Value * axisMax);
+                                        joyReport.AxisZRot = 0;
+                                    }
+                                }
                                 break;
                         }
                     }

@@ -16,7 +16,8 @@ enum MotionStatus {
     SetSteerAngle(0),
     SetAccAngle(1),
     ResetSteerAngle(2),
-    ResetAccAngle(3);
+    ResetAccAngle(3),
+    SetAccRatio(4);
 
     private final int val;
 
@@ -82,9 +83,6 @@ public class Motion implements SensorEventListener {
 
     private volatile float motionPitch = 0.0f;
     private volatile float motionRoll = 0.0f;
-
-    public static final float LTValDown = -90.0f;
-    public static final float RTValDown = 90.0f;
 
     private Thread dataSubmitThread = null;
     private volatile boolean dataSubmitShouldStop;

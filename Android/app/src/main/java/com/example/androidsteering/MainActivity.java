@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -28,6 +29,7 @@ import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.math.MathUtils;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -56,8 +58,11 @@ public class MainActivity extends AppCompatActivity {
     private Thread threadDisconnect;
 
     private ControllerMode controllerMode;
-    private boolean LTPressed = false;
-    private boolean RTPressed = false;
+    private volatile boolean LTPressed = false;
+    private volatile boolean RTPressed = false;
+
+    private float displayY;
+
     private final Handler handlerUpdateUI = new Handler(Looper.getMainLooper());
     private final Runnable runnableUpdateUI = new Runnable() {
         @SuppressLint("DefaultLocale")
@@ -78,10 +83,13 @@ public class MainActivity extends AppCompatActivity {
                 if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
                     if (!LTPressed && !RTPressed)
                         globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
-                    if (LTPressed)
-                        globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.LTValDown);
-                    if (RTPressed)
-                        globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.RTValDown);
+                    if (LTPressed) {
+                        ProgressBar bar = findViewById(R.id.progressBarLT);
+                        globalBuffer.addData(MotionStatus.SetAccRatio.getVal(), -bar.getProgress() / (float) bar.getMax());
+                    } else if (RTPressed) {
+                        ProgressBar bar = findViewById(R.id.progressBarRT);
+                        globalBuffer.addData(MotionStatus.SetAccRatio.getVal(), bar.getProgress() / (float) bar.getMax());
+                    }
                 }
             } catch (Exception e) {
                 Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
@@ -101,6 +109,10 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         // keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // get window size
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        displayY = displayMetrics.heightPixels * 0.5f;
         // set default fragment
         setFragment(R.id.nav_connection_frag);
         // set action bar
@@ -391,32 +403,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean touchLT(View view, MotionEvent e) {
+        ProgressBar bar = findViewById(R.id.progressBarLT);
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.LTValDown);
                 LTPressed = true;
+                bar.setVisibility(View.VISIBLE);
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                float ratio = MathUtils.clamp((displayY - e.getRawY()) / (displayY * 0.8f) + 0.5f, 0.0f, 1.0f);
+                bar.setProgress((int) (bar.getMax() * ratio));
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
                 LTPressed = false;
-                globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
+                bar.setVisibility(View.INVISIBLE);
                 return true;
         }
         return false;
     }
 
     public boolean touchRT(View view, MotionEvent e) {
+        ProgressBar bar = findViewById(R.id.progressBarRT);
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(MotionStatus.SetAccAngle.getVal(), Motion.RTValDown);
                 RTPressed = true;
+                bar.setVisibility(View.VISIBLE);
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                float ratio = MathUtils.clamp((displayY - e.getRawY()) / (displayY * 0.8f) + 0.5f, 0.0f, 1.0f);
+                bar.setProgress((int) (bar.getMax() * ratio));
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
-                globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
                 RTPressed = false;
+                bar.setVisibility(View.INVISIBLE);
                 return true;
         }
         return false;
