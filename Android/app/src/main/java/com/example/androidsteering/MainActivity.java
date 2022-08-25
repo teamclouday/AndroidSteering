@@ -74,9 +74,9 @@ public class MainActivity extends AppCompatActivity {
                     globalBuffer.addData(0, 0.0f);
                 }
                 if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
-                    if (!LTPressed && !RTPressed) globalBuffer.addData(1, -30.0f);
-                    if (LTPressed) globalBuffer.addData(1, Motion.LTVal);
-                    if (RTPressed) globalBuffer.addData(1, Motion.RTVal);
+                    if (!LTPressed && !RTPressed) globalBuffer.addData(1, Motion.LTRTValUp);
+                    if (LTPressed) globalBuffer.addData(1, Motion.LTValDown);
+                    if (RTPressed) globalBuffer.addData(1, Motion.RTValDown);
                 }
             } catch (Exception e) {
                 Log.d(getString(R.string.logTagMain), Objects.requireNonNull(e.getMessage()));
@@ -333,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
     // send data to reset controller motion status
     public void resetController() {
         globalBuffer.addData(0, 0.0f);
-        globalBuffer.addData(1, -30.0f);
+        globalBuffer.addData(1, Motion.LTRTValUp);
     }
 
     // callback for rest buttons
@@ -389,13 +389,13 @@ public class MainActivity extends AppCompatActivity {
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(1, Motion.LTVal);
+                globalBuffer.addData(1, Motion.LTValDown);
                 LTPressed = true;
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
                 LTPressed = false;
-                globalBuffer.addData(1, -30.0f);
+                globalBuffer.addData(1, Motion.LTRTValUp);
                 return true;
         }
         return false;
@@ -405,12 +405,12 @@ public class MainActivity extends AppCompatActivity {
         switch (e.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 view.setPressed(true);
-                globalBuffer.addData(1, Motion.RTVal);
+                globalBuffer.addData(1, Motion.RTValDown);
                 RTPressed = true;
                 return true;
             case MotionEvent.ACTION_UP:
                 view.setPressed(false);
-                globalBuffer.addData(1, -30.0f);
+                globalBuffer.addData(1, Motion.LTRTValUp);
                 RTPressed = false;
                 return true;
         }

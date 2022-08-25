@@ -7,7 +7,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Process;
 import android.util.Log;
+
+import androidx.core.math.MathUtils;
 
 enum MotionButton {
     X(0),
@@ -58,13 +61,19 @@ public class Motion implements SensorEventListener {
     private final float[] accReading = new float[3];
     private final float[] magReading = new float[3];
     private final float[] rotationMatrix = new float[9];
-    private final float[] orientationMatrix = new float[3];
+    private final float[] orientation = new float[3];
 
     private volatile float motionPitch = 0.0f;
     private volatile float motionRoll = 0.0f;
 
-    public static final float LTVal = 0.0f;
-    public static final float RTVal = -70.0f;
+    public static final float LTValDown = 0.0f;
+    public static final float RTValDown = -70.0f;
+    public static final float LTRTValUp = -30.0f;
+
+    private Thread dataSubmitThread = null;
+    private volatile boolean dataSubmitShouldStop;
+    private final int MAX_WAIT_TIME = 1000;
+    private final int DATA_UPDATE_FREQ = 20; // wait for milliseconds for next update
 
     public Motion(MainActivity activity, Connection.MyBuffer buffer) {
         mainActivity = activity;
@@ -76,6 +85,8 @@ public class Motion implements SensorEventListener {
 
     // start sensor callback
     public void start() {
+        if (dataSubmitThread != null && dataSubmitThread.isAlive())
+            stop();
         // sample period is set to 10ms
         if (!sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME))
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register accelerometer");
@@ -83,37 +94,62 @@ public class Motion implements SensorEventListener {
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register magnetic field");
         else
             Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
+        // start data submission thread
+        dataSubmitShouldStop = false;
+        dataSubmitThread = new Thread(() -> {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
+            while (!dataSubmitShouldStop) {
+                try {
+                    globalBuffer.addData(readPitch(), readRoll());
+                    Thread.sleep(DATA_UPDATE_FREQ);
+                } catch (InterruptedException e) {
+                    Log.d(mainActivity.getString(R.string.logTagMotion), e.toString());
+                    break;
+                }
+            }
+        });
+        dataSubmitThread.start();
     }
 
     // stop sensor callback
     public void stop() {
         sensorManager.unregisterListener(this);
         Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener unregistered");
+        dataSubmitShouldStop = true;
+        if (dataSubmitThread != null && dataSubmitThread.isAlive()) {
+            try {
+                dataSubmitThread.join(MAX_WAIT_TIME);
+            } catch (InterruptedException e) {
+                Log.d(mainActivity.getString(R.string.logTagMotion), e.toString());
+            }
+        }
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
+        if (event == null) return;
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             System.arraycopy(event.values, 0, accReading, 0, accReading.length);
-            update();
+            updatePose();
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
             System.arraycopy(event.values, 0, magReading, 0, magReading.length);
-            update();
+            updatePose();
         }
     }
 
     // update current pitch roll
-    private void update() {
+    private void updatePose() {
         SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
-        SensorManager.getOrientation(rotationMatrix, orientationMatrix);
+        SensorManager.getOrientation(rotationMatrix, orientation);
 
-        float pitch = (float) Math.toDegrees(orientationMatrix[1]);
-        float roll = (float) (Math.toDegrees(orientationMatrix[2]) + 90.0);
+        double pitch = orientation[1];
+        double roll = Math.PI * 0.5 + orientation[2];
+        // intense math (lol)
+        // to compute the real pitch (vertical rotation, or steering angle)
+        pitch = Math.asin(MathUtils.clamp(0.5 * Math.sin(pitch) / Math.cos(roll), -1.0, 1.0));
 
-        updatePitch(pitch);
-        updateRoll(roll);
-
-        globalBuffer.addData(readPitch(), readRoll());
+        updatePitch((float) Math.toDegrees(pitch));
+        updateRoll((float) Math.toDegrees(roll));
     }
 
     // update pitch

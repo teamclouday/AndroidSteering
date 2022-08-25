@@ -91,6 +91,8 @@ To restore true steering angle, here's the formula:
 let x = acceleration angle (around X, from sensor)
 let y0 = steering angle (from sensor)
 let y1 = true steering angle (to compute)
-y1 = arcsin(sin(y0) / cos(x))
+y1 = arcsin(0.5 * sin(y0) / cos(x))
 ```
-The math comes from some intense 3D imagination process in head 🤣 If you know any tools that can easily create & rotate lines in 3D space, please let me know!
+
+The formula comes from some intense 3D imagination process in head 🤣 It may not be accurate, but it works.\
+If you know any **free** tools that can easily create & rotate lines in 3D space and compute angles (like AutoCAD), please let me know!
