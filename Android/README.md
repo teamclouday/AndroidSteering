@@ -74,7 +74,7 @@ In this app, the new angles / orientations are computed by a combination of [Acc
 
 Now imagine this situation:
 
-<video src='../Assets/motionAngleDemo.mp4' width=800></video>
+https://user-images.githubusercontent.com/22620163/186577875-96fb6ec0-1b3f-4e13-a498-ec0c23320a47.mp4
 
 _We use the same world coordinate as previous image._
 1. User starts by holding phone vertically straight, landscape mode.
