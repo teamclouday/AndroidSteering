@@ -148,6 +148,10 @@ public class Motion implements SensorEventListener {
         // to compute the real pitch (vertical rotation, or steering angle)
         double pitch = Math.asin(MathUtils.clamp(Math.sin(orientation[1]) / Math.cos(roll), -1.0, 1.0));
 
+        // for steering, check whether it is over 90 degrees either side
+        if (orientation[2] > 0.0)
+            pitch = pitch > 0.0 ? Math.PI - Math.abs(pitch) : Math.abs(pitch) - Math.PI;
+
         updatePitch((float) Math.toDegrees(pitch));
         updateRoll((float) Math.toDegrees(roll));
     }
