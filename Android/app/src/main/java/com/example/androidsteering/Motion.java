@@ -142,11 +142,11 @@ public class Motion implements SensorEventListener {
         SensorManager.getRotationMatrix(rotationMatrix, null, accReading, magReading);
         SensorManager.getOrientation(rotationMatrix, orientation);
 
-        double pitch = orientation[1];
-        double roll = Math.PI * 0.5 + orientation[2];
         // intense math (lol)
+        // compute real roll (horizontal rotation, or acceleration angle)
+        double roll = Math.asin(MathUtils.clamp(Math.sin(Math.PI * 0.5 + orientation[2]) * Math.cos(orientation[1]), -1.0, 1.0));
         // to compute the real pitch (vertical rotation, or steering angle)
-        pitch = Math.asin(MathUtils.clamp(0.5 * Math.sin(pitch) / Math.cos(roll), -1.0, 1.0));
+        double pitch = Math.asin(MathUtils.clamp(Math.sin(orientation[1]) / Math.cos(roll), -1.0, 1.0));
 
         updatePitch((float) Math.toDegrees(pitch));
         updateRoll((float) Math.toDegrees(roll));

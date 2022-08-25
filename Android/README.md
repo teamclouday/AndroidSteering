@@ -65,7 +65,7 @@ __Motion Status__:
 
 ------
 
-### Steering Angle Restoration
+### Motion Angle Restoration
 
 Here's a world coordinate system I stole from [learnopengl](https://developer.android.com/guide/topics/sensors/sensors_overview#sensors-coords):\
 ![coordinate](https://learnopengl.com/img/getting-started/coordinate_systems_right_handed.png)
@@ -82,17 +82,23 @@ _We use the same world coordinate as previous image._
 3. Then user rotate around +Z' to steer car. The angle around +Z' is the expected angle.
 4. However, the motion sensor only captures the angle in absolute world space.
  
-If use this value from motion sensor directly, there'll be a bug:\
-The more the user accelerate car (rotate forward), the smaller the steering angle becomes, which is against instinct of how steering wheel works.\
-In my opinion, the steering angle should always be the angle on the plane where the wheel resides, and the plane cannot be assumed to be always vertical in this case.
+If use this value from motion sensor directly, there'll be two bugs:\
+* The more the user accelerate car (rotate forward), the smaller the steering angle becomes, which is against instinct of how steering wheel works.
+* Once user steer by rotating the phone, acceleration angle will change.
 
-To restore true steering angle, here's the formula:
+In my opinion, the steering angle should always be the angle on the plane where the wheel resides, and it should not affect acceleration angle.
+
+To restore true angles, here's the formula I use:
 ```
-let x = acceleration angle (around X, from sensor)
-let y0 = steering angle (from sensor)
-let y1 = true steering angle (to compute)
-y1 = arcsin(0.5 * sin(y0) / cos(x))
+let x = acceleration angle (from sensor)
+let y = steering angle (from sensor)
+
+let m = true acceleration angle
+let n = true steering angle
+
+m = arcsin(sin(x) * cos(y))
+n = arcsin(sin(y) / cos(m))
 ```
 
-The formula comes from some intense 3D imagination process in head 🤣 It may not be accurate, but it works.\
-If you know any **free** tools that can easily create & rotate lines in 3D space and compute angles (like AutoCAD), please let me know!
+The formula comes from some intense 3D imagination process in head 🤣 as well as some try-and-guess. It may not be accurate, but it works.\
+If you know how to compute the real formula or if this is correct, please let me know!
