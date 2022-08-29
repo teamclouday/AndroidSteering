@@ -8,7 +8,8 @@
         Title="Select Network Adapter"
         ResizeMode="CanMinimize"
         Background="LightSkyBlue"
-        Height="250" Width="400">
+        Height="250" Width="400"
+        Closing="SelectNetworkWindow_Closing">
     <Grid>
         <ComboBox x:Name="NetworkAddressList" Cursor="Hand" HorizontalAlignment="Center" Margin="0,50,0,0"
                       VerticalAlignment="Top" FontSize="18" Width="250" DropDownClosed="NetworkAddressList_DropDownClosed"

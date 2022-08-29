@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 
 namespace SteeringWheel
@@ -22,6 +23,12 @@ namespace SteeringWheel
             foreach (var address in addresses)
                 NetworkAddressList.Items.Add($"{address.Item1}: {address.Item2}");
             NetworkAddressList.SelectedIndex = selectedIdx;
+        }
+
+        // closing dialog window
+        private void SelectNetworkWindow_Closing(object sender, CancelEventArgs e)
+        {
+            DialogResult = true;
         }
 
         // select in network address list
