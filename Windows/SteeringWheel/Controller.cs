@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using vJoyInterfaceWrap;
 
@@ -89,10 +90,10 @@ namespace SteeringWheel
     {
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;
-        private Thread processThread;
-        private Thread updateThread;
-        private readonly int MAX_WAIT_TIME = 1500;
-        private bool isProcessAllowed = false;
+        private Task processTask;
+        private Task updateTask;
+        private readonly CancellationTokenSource cancellationToken = new CancellationTokenSource();
+        private bool isProcessAllowed;
 
         public float CAP_SteeringMin { get; set; } = -60.0f;
         public float CAP_SteeringMax { get; set; } = 60.0f;
@@ -109,13 +110,14 @@ namespace SteeringWheel
         private int axisMax = 0, axisMaxHalf = 0;
         public bool vJoyInitialized { get; private set; }
         private const int triggerInterval = 100;
-        private const int updateInterval = 5;
+        private const int updateInterval = 50;
 
         public Controller(MainWindow window, SharedBuffer buffer)
         {
             mainWindow = window;
             sharedBuffer = buffer;
 
+            isProcessAllowed = true;
             vJoyInitialized = false;
             joystick = new vJoy();
             joyReport = new vJoy.JoystickState();
@@ -133,37 +135,48 @@ namespace SteeringWheel
         public void Destroy()
         {
             isProcessAllowed = false;
-            if (processThread != null && processThread.IsAlive)
+            if (processTask?.IsCompleted == false || updateTask?.IsCompleted == false)
             {
-                if (!processThread.Join(MAX_WAIT_TIME)) processThread.Abort();
-            }
-            if (updateThread != null && updateThread.IsAlive)
-            {
-                if (!updateThread.Join(MAX_WAIT_TIME)) updateThread.Abort();
+                cancellationToken.Cancel();
+                try
+                {
+                    processTask?.Wait();
+                    updateTask?.Wait();
+                }
+                catch (OperationCanceledException err)
+                {
+                    Debug.WriteLine("[Controller] Destroy -> " + err.Message);
+                }
+                finally
+                {
+                    processTask?.Dispose();
+                    updateTask?.Dispose();
+                }
             }
             ResetVJoy();
             joystick.RelinquishVJD(joystickID);
         }
 
         /// <summary>
-        /// setup background thread that write joystate
+        /// setup background task that write joystate
         /// </summary>
         private void SetupProcess()
         {
             isProcessAllowed = true;
-            processThread = new Thread(() =>
+            processTask = Task.Factory.StartNew(async () =>
             {
                 while (isProcessAllowed)
                 {
+                    if (cancellationToken.IsCancellationRequested) break;
                     var data = sharedBuffer.GetData();
                     if (data == null)
                     {
-                        Thread.Sleep(5);
+                        await Task.Delay(5);
                         continue;
                     }
                     if (data.IsButton)
                     {
-                        Debug.WriteLine("[Controller] processThread button pressed (" + data.Status + ")");
+                        Debug.WriteLine("[Controller] processTask button pressed (" + data.Status + ")");
                         switch ((MotionButton)data.Status)
                         {
                             case MotionButton.A:
@@ -240,20 +253,17 @@ namespace SteeringWheel
                                 break;
                         }
                     }
-                    Thread.Sleep(1);
                 }
-            });
-            processThread.Priority = ThreadPriority.AboveNormal;
-            processThread.Start();
+            }, cancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         /// <summary>
-        /// set up background thread that updates vJoy state
+        /// set up background task that updates vJoy state
         /// </summary>
         private void SetupUpdate()
         {
             isProcessAllowed = true;
-            updateThread = new Thread(() =>
+            updateTask = Task.Factory.StartNew(async () =>
             {
                 while (isProcessAllowed)
                 {
@@ -262,15 +272,13 @@ namespace SteeringWheel
                         if (!joystick.UpdateVJD(joystickID, ref joyReport))
                         {
                             // AddLog("Failed to update vJoy controller state");
-                            Debug.WriteLine("[Controller] updateThread failed to update VJD");
+                            Debug.WriteLine("[Controller] updateTask failed to update VJD");
                             joystick.AcquireVJD(joystickID);
                         }
                     }
-                    Thread.Sleep(updateInterval);
+                    await Task.Delay(updateInterval);
                 }
-            });
-            updateThread.Priority = ThreadPriority.AboveNormal;
-            updateThread.Start();
+            }, cancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         /// <summary>
@@ -405,18 +413,18 @@ namespace SteeringWheel
         /// <param name="button"></param>
         public void TriggerControl(ControlButton button)
         {
-            new Thread(() =>
+            Task.Run(async () =>
             {
                 lock (joyReportLock)
                 {
                     joyReport.Buttons |= (uint)(0x1 << ((int)button - 1));
                 }
-                Thread.Sleep(triggerInterval);
+                await Task.Delay(triggerInterval);
                 lock (joyReportLock)
                 {
                     joyReport.Buttons &= ~(uint)(0x1 << ((int)button - 1));
                 }
-            }).Start();
+            });
         }
 
         /// <summary>
@@ -425,7 +433,7 @@ namespace SteeringWheel
         /// <param name="axis"></param>
         public void TriggerControl(ControlAxis axis)
         {
-            new Thread(() =>
+            Task.Run(async () =>
             {
                 lock (joyReportLock)
                 {
@@ -463,7 +471,7 @@ namespace SteeringWheel
                             break;
                     }
                 }
-                Thread.Sleep(triggerInterval);
+                await Task.Delay(triggerInterval);
                 lock (joyReportLock)
                 {
                     switch (axis)
@@ -494,7 +502,7 @@ namespace SteeringWheel
                             break;
                     }
                 }
-            }).Start();
+            });
         }
 
         /// <summary>

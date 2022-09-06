@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SteeringWheel
 {
@@ -21,9 +22,9 @@ namespace SteeringWheel
         private readonly System.Windows.Forms.NotifyIcon notifyIcon;
         private bool notifDisplayedOnce = false;
 
-        private Thread connectThread;
-        private Thread disconnectThread;
-        private readonly int MAX_WAIT_TIME = 1500;
+        private Task connectTask;
+        private Task disconnectTask;
+        private readonly CancellationTokenSource connectionToken = new CancellationTokenSource();
 
         [System.Runtime.InteropServices.DllImport("User32.dll")]
         private static extern bool SetForegroundWindow(IntPtr handle);
@@ -66,12 +67,12 @@ namespace SteeringWheel
             // load settings
             if (Properties.Settings.Default.MainWindowIsBluetoothSelected)
             {
-                connectionService.mode = ConnectionMode.Bluetooth;
+                connectionService.Mode = ConnectionMode.Bluetooth;
                 RadioButtonBluetooth.IsChecked = true;
             }
             else
             {
-                connectionService.mode = ConnectionMode.Wifi;
+                connectionService.Mode = ConnectionMode.Wifi;
                 RadioButtonWifi.IsChecked = true;
             }
         }
@@ -125,14 +126,24 @@ namespace SteeringWheel
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
             controllerService.Destroy();
-            connectionService.Destroy();
-            if (connectThread != null && connectThread.IsAlive)
+            connectionService.Destroy().Wait();
+            if (connectTask?.IsCompleted == false || disconnectTask?.IsCompleted == false)
             {
-                if (!connectThread.Join(MAX_WAIT_TIME)) connectThread.Abort();
-            }
-            if (disconnectThread != null && disconnectThread.IsAlive)
-            {
-                if (!disconnectThread.Join(MAX_WAIT_TIME)) disconnectThread.Abort();
+                connectionToken.Cancel();
+                try
+                {
+                    connectTask?.Wait();
+                    disconnectTask?.Wait();
+                }
+                catch (OperationCanceledException err)
+                {
+                    Debug.WriteLine("MainWindow_Closing -> " + err.Message);
+                }
+                finally
+                {
+                    connectTask?.Dispose();
+                    disconnectTask?.Dispose();
+                }
             }
             notifyIcon.Dispose();
             Properties.Settings.Default.Save();
@@ -189,30 +200,28 @@ namespace SteeringWheel
         /// <param name="e"></param>
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            switch (connectionService.status)
+            switch (connectionService.Status)
             {
                 case ConnectionStatus.Default:
-                    if (connectThread == null || !connectThread.IsAlive)
+                    if (connectTask?.IsCompleted != false)
                     {
                         if (!connectionService.CheckWifi()) return;
                         LockRadioButtons();
-                        connectThread = new Thread(() =>
+                        connectTask = Task.Run(async () =>
                         {
-                            connectionService.Connect();
-                        });
-                        connectThread.Start();
+                            await connectionService.Connect();
+                        }, connectionToken.Token);
                     }
                     else AddLog("Already connecting...");
                     break;
                 case ConnectionStatus.Listening:
                 case ConnectionStatus.Connected:
-                    if (disconnectThread == null || !disconnectThread.IsAlive)
+                    if (disconnectTask?.IsCompleted != false)
                     {
-                        disconnectThread = new Thread(() =>
+                        disconnectTask = Task.Run(async () =>
                         {
-                            connectionService.Disconnect();
-                        });
-                        disconnectThread.Start();
+                            await connectionService.Disconnect();
+                        }, connectionToken.Token);
                     }
                     else AddLog("Already disconnecting...");
                     break;
@@ -242,7 +251,7 @@ namespace SteeringWheel
         /// </summary>
         public void UpdateConnectButton()
         {
-            switch (connectionService.status)
+            switch (connectionService.Status)
             {
                 case ConnectionStatus.Default:
                     ConnectButton.Content = "Connect";
@@ -311,12 +320,12 @@ namespace SteeringWheel
         {
             if ((sender as RadioButton) == RadioButtonBluetooth)
             {
-                connectionService.mode = ConnectionMode.Bluetooth;
+                connectionService.Mode = ConnectionMode.Bluetooth;
                 Properties.Settings.Default.MainWindowIsBluetoothSelected = true;
             }
             else if ((sender as RadioButton) == RadioButtonWifi)
             {
-                connectionService.mode = ConnectionMode.Wifi;
+                connectionService.Mode = ConnectionMode.Wifi;
                 Properties.Settings.Default.MainWindowIsBluetoothSelected = false;
             }
         }

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Windows;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Collections.Generic;
 using InTheHand.Net;
@@ -128,8 +129,8 @@ namespace SteeringWheel
     {
         private readonly MainWindow mainWindow;
         private readonly SharedBuffer sharedBuffer;
-        public ConnectionMode mode { get; set; }
-        public ConnectionStatus status { get; private set; }
+        public ConnectionMode Mode { get; set; }
+        public ConnectionStatus Status { get; private set; }
 
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
@@ -138,7 +139,7 @@ namespace SteeringWheel
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
         private bool isConnectionAllowed = false;
-        private byte[] lastPack = new byte[13];
+        private readonly byte[] lastPack = new byte[13];
         private int lastPackLength = 0;
 
         // bluetooth components
@@ -147,7 +148,8 @@ namespace SteeringWheel
         private BluetoothListener bthListener = null;
         private BluetoothClient bthClient = null;
         private BluetoothEndPoint bthTargetDeviceID = null;
-        private Thread bthThread = null;
+        private Task bthTask = null;
+        private CancellationTokenSource bthTaskToken = new CancellationTokenSource();
         // wifi components
         private readonly int wifiPort = 55555;
         private string wifiAddress;
@@ -155,24 +157,25 @@ namespace SteeringWheel
         private IPEndPoint wifiTargetDeviceID = null;
         private Socket wifiServer = null;
         private Socket wifiClient = null;
-        private Thread wifiThread = null;
+        private Task wifiTask = null;
+        private CancellationTokenSource wifiTaskToken = new CancellationTokenSource();
 
         public Connection(MainWindow window, SharedBuffer buffer)
         {
             mainWindow = window;
             sharedBuffer = buffer;
-            mode = ConnectionMode.Bluetooth;
-            status = ConnectionStatus.Default;
+            Mode = ConnectionMode.Bluetooth;
+            Status = ConnectionStatus.Default;
         }
 
         /// <summary>
         /// general connect function
         /// </summary>
-        public void Connect()
+        public async Task Connect()
         {
-            if (mode == ConnectionMode.Bluetooth) ConnectBluetooth();
-            else ConnectWifi();
-            if (status == ConnectionStatus.Default)
+            if (Mode == ConnectionMode.Bluetooth) await ConnectBluetooth();
+            else await ConnectWifi();
+            if (Status == ConnectionStatus.Default)
             {
                 Application.Current.Dispatcher.Invoke(new Action(() =>
                 {
@@ -184,7 +187,7 @@ namespace SteeringWheel
         /// <summary>
         /// connect with bluetooth server
         /// </summary>
-        private void ConnectBluetooth()
+        private async Task ConnectBluetooth()
         {
             // first check if bluetooth is enabled
             if (!BluetoothRadio.IsSupported)
@@ -193,7 +196,7 @@ namespace SteeringWheel
                 return;
             }
             // initialize bluetooth server
-            if (bthListener != null) Disconnect();
+            if (bthListener != null) await Disconnect();
             bthListener = new BluetoothListener(bthServerUUID)
             {
                 ServiceName = bthServerName
@@ -239,15 +242,28 @@ namespace SteeringWheel
             }
             if (bthTargetDeviceID == null)
             {
-                Disconnect();
+                await Disconnect();
                 return;
             }
             Debug.WriteLine("[Connection] ConnectBluetooth found valid client");
-            // prepare thread
-            if (bthThread != null && bthThread.IsAlive)
+            // prepare task
+            if (bthTask?.IsCompleted == false)
             {
                 isConnectionAllowed = false;
-                if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
+                bthTaskToken.Cancel();
+                try
+                {
+                    await bthTask;
+                }
+                catch (OperationCanceledException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
+                }
+                finally
+                {
+                    bthTask.Dispose();
+                }
+                bthTaskToken = new CancellationTokenSource();
             }
             // try to accept client with same ID
             try
@@ -265,22 +281,22 @@ namespace SteeringWheel
             {
                 Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                 AddLog("(bluetooth) Server failed to connect valid client");
-                Disconnect();
+                await Disconnect();
                 return;
             }
             catch (SocketException e)
             {
                 Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
                 AddLog("(bluetooth) Server failed to connect valid client");
-                Disconnect();
+                await Disconnect();
                 return;
             }
             // update status
             SetStatus(ConnectionStatus.Connected);
             AddLog("(bluetooth) Client connected\nClient Name: " + bthClient.RemoteMachineName + "\nClient Address: " + bthClient.RemoteEndPoint);
-            // start thread
+            // start task
             isConnectionAllowed = true;
-            bthThread = new Thread(() =>
+            bthTask = Task.Factory.StartNew(async () =>
             {
                 // prepare data placeholders
                 byte[] placeholder = new byte[4];
@@ -291,10 +307,11 @@ namespace SteeringWheel
                     {
                         while (isConnectionAllowed && bthClient != null)
                         {
+                            if (bthTaskToken.IsCancellationRequested) break;
                             // read data into a buffer
                             byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
                             Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
-                            int size = bthStream.Read(buffer, lastPackLength, PACK_SIZE * NUM_PACKS);
+                            int size = await bthStream.ReadAsync(buffer, lastPackLength, PACK_SIZE * NUM_PACKS, bthTaskToken.Token);
                             if (size <= 0) break;
                             int totalSize = size + lastPackLength;
                             // process data into data packs
@@ -325,28 +342,24 @@ namespace SteeringWheel
                             // check for remaining pack, and store for next loop
                             Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
                             lastPackLength = totalSize - idx;
-                            Thread.Sleep(1);
                         }
                     }
                 }
                 catch (SocketException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectBluetooth task -> " + e.Message);
                 }
                 catch (IOException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectBluetooth task -> " + e.Message);
                 }
                 catch (ObjectDisposedException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectBluetooth thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectBluetooth task -> " + e.Message);
                 }
-
-                Disconnect();
-            });
-            bthThread.Priority = ThreadPriority.AboveNormal;
-            bthThread.Start();
-            Debug.WriteLine("[Connection] ConnectBluetooth thread started");
+                await Disconnect();
+            }, bthTaskToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Debug.WriteLine("[Connection] ConnectBluetooth task started");
         }
 
         /// <summary>
@@ -355,7 +368,7 @@ namespace SteeringWheel
         /// <returns></returns>
         public bool CheckWifi()
         {
-            if (mode != ConnectionMode.Wifi)
+            if (Mode != ConnectionMode.Wifi)
                 return true;
             // get wifi IP address
             // reference: https://stackoverflow.com/questions/9855230/how-do-i-get-the-network-interface-and-its-right-ipv4-address
@@ -411,11 +424,11 @@ namespace SteeringWheel
         /// <summary>
         /// connect with wifi server
         /// </summary>
-        private void ConnectWifi()
+        private async Task ConnectWifi()
         {
             AddLog("(wifi) Server network adapter = " + wifiAdapterName);
             AddLog("(wifi) Server IP Address = " + wifiAddress.ToString());
-            if (wifiServer != null) Disconnect();
+            if (wifiServer != null) await Disconnect();
             // create server and start listening
             try
             {
@@ -427,7 +440,7 @@ namespace SteeringWheel
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 AddLog("(wifi) Server failed to start");
-                Disconnect();
+                await Disconnect();
                 return;
             }
             SetStatus(ConnectionStatus.Listening);
@@ -453,26 +466,39 @@ namespace SteeringWheel
             catch (SocketException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
-                Disconnect();
+                await Disconnect();
                 return;
             }
             catch (ObjectDisposedException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
-                Disconnect();
+                await Disconnect();
                 return;
             }
             // check if target is found
             if (wifiTargetDeviceID == null)
             {
-                Disconnect();
+                await Disconnect();
                 return;
             }
-            // prepare thread
-            if (wifiThread != null && wifiThread.IsAlive)
+            // prepare task
+            if (wifiTask?.IsCompleted == false)
             {
                 isConnectionAllowed = false;
-                if (!wifiThread.Join(MAX_WAIT_TIME)) wifiThread.Abort();
+                wifiTaskToken.Cancel();
+                try
+                {
+                    await wifiTask;
+                }
+                catch (OperationCanceledException e)
+                {
+                    Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
+                }
+                finally
+                {
+                    wifiTask.Dispose();
+                }
+                wifiTaskToken = new CancellationTokenSource();
             }
             // try to accept client with same ID
             try
@@ -490,22 +516,22 @@ namespace SteeringWheel
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 AddLog("(wifi) Server failed to connect valid client");
-                Disconnect();
+                await Disconnect();
                 return;
             }
             catch (ObjectDisposedException e)
             {
                 Debug.WriteLine("[Connection] ConnectWifi -> " + e.Message);
                 AddLog("(wifi) Server failed to connect valid client");
-                Disconnect();
+                await Disconnect();
                 return;
             }
             // update status
             SetStatus(ConnectionStatus.Connected);
             AddLog("(wifi) Client connected\nClient Address: " + wifiClient.RemoteEndPoint);
             isConnectionAllowed = true;
-            // start thread
-            wifiThread = new Thread(() =>
+            // start task
+            wifiTask = Task.Factory.StartNew(async () =>
             {
                 // prepare data placeholders
                 byte[] placeholder = new byte[4];
@@ -516,10 +542,11 @@ namespace SteeringWheel
                     {
                         while (isConnectionAllowed && wifiClient != null)
                         {
+                            if (wifiTaskToken.IsCancellationRequested) break;
                             // read data into a buffer
                             byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
                             Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
-                            int size = wifiStream.Read(buffer, lastPackLength, PACK_SIZE * NUM_PACKS);
+                            int size = await wifiStream.ReadAsync(buffer, lastPackLength, PACK_SIZE * NUM_PACKS, wifiTaskToken.Token);
                             if (size <= 0) break;
                             int totalSize = size + lastPackLength;
                             // process data into data packs
@@ -550,27 +577,24 @@ namespace SteeringWheel
                             // check for remaining pack, and store for next loop
                             Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
                             lastPackLength = totalSize - idx;
-                            Thread.Sleep(1);
                         }
                     }
                 }
                 catch (SocketException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectWifi task -> " + e.Message);
                 }
                 catch (IOException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectWifi task -> " + e.Message);
                 }
                 catch (ObjectDisposedException e)
                 {
-                    Debug.WriteLine("[Connection] ConnectWifi thread -> " + e.Message);
+                    Debug.WriteLine("[Connection] ConnectWifi task -> " + e.Message);
                 }
-                Disconnect();
-            });
-            wifiThread.Priority = ThreadPriority.AboveNormal;
-            wifiThread.Start();
-            Debug.WriteLine("[Connection] ConnectWifi thread started");
+                await Disconnect();
+            }, wifiTaskToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Debug.WriteLine("[Connection] ConnectWifi task started");
         }
 
         /// <summary>
@@ -674,9 +698,9 @@ namespace SteeringWheel
         /// <summary>
         /// disconnect server
         /// </summary>
-        public void Disconnect()
+        public async Task Disconnect()
         {
-            if (mode == ConnectionMode.Bluetooth)
+            if (Mode == ConnectionMode.Bluetooth)
             {
                 if (bthClient != null)
                 {
@@ -684,10 +708,25 @@ namespace SteeringWheel
                     bthClient.Close();
                     bthClient = null;
                 }
-                // shut down thread
-                if (bthThread != null && bthThread.IsAlive)
+                // shut down task
+                if (bthTask?.IsCompleted == false)
                 {
-                    if (!bthThread.Join(MAX_WAIT_TIME)) bthThread.Abort();
+                    isConnectionAllowed = false;
+                    bthTaskToken.Cancel();
+                    try
+                    {
+                        await bthTask;
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        Debug.WriteLine("[Connection] Disconnect -> " + e.Message);
+                    }
+                    finally
+                    {
+                        bthTask.Dispose();
+                        bthTask = null;
+                    }
+                    bthTaskToken = new CancellationTokenSource();
                 }
                 // stop server
                 if (bthListener != null)
@@ -716,10 +755,25 @@ namespace SteeringWheel
                     wifiClient.Close();
                     wifiClient = null;
                 }
-                // shut down thread
-                if (wifiThread != null && wifiThread.IsAlive)
+                // shut down task
+                if (wifiTask?.IsCompleted == false)
                 {
-                    if (!wifiThread.Join(MAX_WAIT_TIME)) wifiThread.Abort();
+                    isConnectionAllowed = false;
+                    wifiTaskToken.Cancel();
+                    try
+                    {
+                        await wifiTask;
+                    }
+                    catch (OperationCanceledException e)
+                    {
+                        Debug.WriteLine("[Connection] Disconnect -> " + e.Message);
+                    }
+                    finally
+                    {
+                        wifiTask.Dispose();
+                        wifiTask = null;
+                    }
+                    wifiTaskToken = new CancellationTokenSource();
                 }
                 // stop server
                 if (wifiServer != null)
@@ -744,15 +798,15 @@ namespace SteeringWheel
         /// <summary>
         /// destroy connection service
         /// </summary>
-        public void Destroy()
+        public async Task Destroy()
         {
             isConnectionAllowed = false;
             // check bluetooth side
-            mode = ConnectionMode.Bluetooth;
-            Disconnect();
+            Mode = ConnectionMode.Bluetooth;
+            await Disconnect();
             // check wifi side
-            mode = ConnectionMode.Wifi;
-            Disconnect();
+            Mode = ConnectionMode.Wifi;
+            await Disconnect();
         }
 
         /// <summary>
@@ -763,8 +817,8 @@ namespace SteeringWheel
         /// <returns>whether status is updated</returns>
         private bool SetStatus(ConnectionStatus s, bool unlock = false)
         {
-            bool ret = s != status;
-            status = s;
+            bool ret = s != Status;
+            Status = s;
             Application.Current.Dispatcher.Invoke(new Action(() =>
             {
                 mainWindow.UpdateConnectButton();
