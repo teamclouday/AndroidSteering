@@ -61,8 +61,16 @@ Also a potential Xbox controller emulator
      3. Server will start listening  
      4. Tap `Listening` will stop server  
      5. If connected, tap `Connected` will disconnect device and stop server  
-  6. `Configure` button leads to the configuration page  
-     It is used to configure buttons and stick axis in a game or steam when vJoy  controller is not recognized or has wrong settings  
+  6. `Controller` button leads to the xbox controller mapping page  
+     It is used to map buttons and stick axis in a game or steam when vJoy controller is not recognized or has wrong settings
+  7. `Configure` button opens the motion angle configuration window
+     "Steering Angles" control the left and right limit of the steering wheel angle (in degrees)
+     "Acceleration Angles" control the forward and backward limit of the phone angle for acceleration
+     "Acceleration Angles (Rest)" is also for acceleration, but defines the range of angles where phone is considered at rest (no acceleration)
+
+Finally, the first run of Windows app after installation may be slow or not responding.\
+This is because the app will need to be initialized for the first time, a [well-known issue](https://stackoverflow.com/a/1308732/11397618) of ClickOnce deployment.\
+In this case, close the app and open again.
 
 </details>
 
@@ -122,3 +130,5 @@ __Windows Side__
 <img src="Assets/pc1.png" width="600" alt="pc1">
 
 <img src="Assets/pc2.png" width="600" alt="pc2">
+
+<img src="Assets/pc3.png" width="600" alt="pc3">
