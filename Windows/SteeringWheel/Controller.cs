@@ -273,6 +273,7 @@ namespace SteeringWheel
                         {
                             // AddLog("Failed to update vJoy controller state");
                             Debug.WriteLine("[Controller] updateTask failed to update VJD");
+                            joystick.RelinquishVJD(joystickID);
                             joystick.AcquireVJD(joystickID);
                         }
                     }
@@ -354,7 +355,7 @@ namespace SteeringWheel
                         long val = 0L;
                         joystick.GetVJDAxisMax(joystickID, HID_USAGES.HID_USAGE_X, ref val);
                         axisMax = (int)val;
-                        axisMaxHalf = axisMax >> 1;
+                        axisMaxHalf = axisMax / 2;
                         joyReport.bDevice = (byte)joystickID;
                         ResetVJoy();
                         AddLog("vJoy valid device found\nID = " + joystickID);
