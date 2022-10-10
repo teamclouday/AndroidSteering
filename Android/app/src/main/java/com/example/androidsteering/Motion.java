@@ -93,7 +93,7 @@ public class Motion implements SensorEventListener {
         mainActivity = activity;
         globalBuffer = buffer;
         sensorManager = (SensorManager) mainActivity.getSystemService(Context.SENSOR_SERVICE);
-        accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
     }
 
@@ -142,7 +142,7 @@ public class Motion implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event == null) return;
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+        if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
             System.arraycopy(event.values, 0, accReading, 0, accReading.length);
             updatePose();
         } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
