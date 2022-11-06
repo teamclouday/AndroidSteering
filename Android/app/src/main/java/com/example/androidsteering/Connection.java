@@ -27,7 +27,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -38,8 +38,8 @@ enum ConnectionMode {
 
 public class Connection {
     static class MyBuffer {
-        private final int MAX_SIZE = 10;
-        private final ArrayList<Motion.MyMove> buff = new ArrayList<>();
+        private final int MAX_SIZE = 200;
+        private final LinkedList<Motion.MyMove> buff = new LinkedList<>();
         private boolean running = false;
         private boolean updatePitch = true;
         private boolean updateRoll = true;
@@ -48,14 +48,11 @@ public class Connection {
             if (!running) return;
             synchronized (this) {
                 if (updatePitch)
-                    buff.add(new Motion.MyMove(false, MotionStatus.SetSteerAngle.getVal(), pitch));
+                    buff.addLast(new Motion.MyMove(false, MotionStatus.SetSteerAngle.getVal(), pitch));
                 if (updateRoll)
-                    buff.add(new Motion.MyMove(false, MotionStatus.SetAccAngle.getVal(), roll));
-                int idx = buff.size() - 1;
-                while (buff.size() > MAX_SIZE && idx >= 0) {
-                    if (!buff.get(idx).MotionButton)
-                        buff.remove(idx);
-                    idx--;
+                    buff.addLast(new Motion.MyMove(false, MotionStatus.SetAccAngle.getVal(), roll));
+                while (buff.size() > MAX_SIZE) {
+                    buff.removeFirst();
                 }
             }
         }
@@ -63,12 +60,9 @@ public class Connection {
         public void addData(MotionStatus status, float val) {
             if (!running) return;
             synchronized (this) {
-                buff.add(new Motion.MyMove(false, status.getVal(), val));
-                int idx = buff.size() - 1;
-                while (buff.size() > MAX_SIZE && idx >= 0) {
-                    if (!buff.get(idx).MotionButton)
-                        buff.remove(idx);
-                    idx--;
+                buff.addLast(new Motion.MyMove(false, status.getVal(), val));
+                while (buff.size() > MAX_SIZE) {
+                    buff.removeFirst();
                 }
             }
         }
@@ -76,20 +70,17 @@ public class Connection {
         public void addData(MotionButton button, boolean pressed) {
             if (!running) return;
             synchronized (this) {
-                buff.add(new Motion.MyMove(true, button.getVal(), pressed ? 1.0f : 0.0f));
-                int idx = buff.size() - 1;
-                while (buff.size() > MAX_SIZE && idx >= 0) {
-                    if (!buff.get(idx).MotionButton)
-                        buff.remove(idx);
-                    idx--;
+                buff.addLast(new Motion.MyMove(true, button.getVal(), pressed ? 1.0f : 0.0f));
+                while (buff.size() > MAX_SIZE) {
+                    buff.removeFirst();
                 }
             }
         }
 
         public Motion.MyMove getData() {
             synchronized (this) {
-                if (buff.size() <= 0) return null;
-                return buff.remove(0);
+                if (buff.isEmpty()) return null;
+                return buff.removeFirst();
             }
         }
 

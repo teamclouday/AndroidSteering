@@ -132,8 +132,8 @@ namespace SteeringWheel
                 connectionToken.Cancel();
                 try
                 {
-                    connectTask?.Wait();
-                    disconnectTask?.Wait();
+                    connectTask?.Wait(1000);
+                    disconnectTask?.Wait(1000);
                 }
                 catch (OperationCanceledException err)
                 {
@@ -141,8 +141,10 @@ namespace SteeringWheel
                 }
                 finally
                 {
-                    connectTask?.Dispose();
-                    disconnectTask?.Dispose();
+                    if (connectTask?.IsCompleted == true)
+                        connectTask?.Dispose();
+                    if (disconnectTask?.IsCompleted == true)
+                        disconnectTask?.Dispose();
                 }
             }
             notifyIcon.Dispose();

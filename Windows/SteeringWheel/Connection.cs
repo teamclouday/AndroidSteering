@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Windows;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +11,6 @@ using System.Collections.Generic;
 using InTheHand.Net;
 using InTheHand.Net.Sockets;
 using InTheHand.Net.Bluetooth;
-using System.Net.NetworkInformation;
 
 namespace SteeringWheel
 {
@@ -19,44 +19,21 @@ namespace SteeringWheel
     /// </summary>
     public class SharedBuffer
     {
-        private const int MAX_SIZE = 10;
-        private readonly List<MotionData> buffer = new List<MotionData>();
+        private const int MAX_SIZE = 200;
+        private readonly Queue<MotionData> buffer = new Queue<MotionData>();
         public void AddData(bool v1, int v2, float v3)
         {
             lock (buffer)
             {
-                if (v1 || v2 == (int)MotionStatus.ResetSteerAngle ||
-                    v2 == (int)MotionStatus.ResetAccAngle || buffer.Count <= MAX_SIZE)
+                buffer.Enqueue(new MotionData()
                 {
-                    buffer.Add(new MotionData()
-                    {
-                        IsButton = v1,
-                        Status = v2,
-                        Value = v3
-                    });
-                }
-                else
+                    IsButton = v1,
+                    Status = v2,
+                    Value = v3
+                });
+                while (buffer.Count > MAX_SIZE)
                 {
-                    bool updated = false;
-                    for (int idx = buffer.Count - 1; idx >= 0; idx--)
-                    {
-                        if (!buffer[idx].IsButton && buffer[idx].Status == v2)
-                        {
-                            buffer[idx].Value = v3;
-                            updated = true;
-                            break;
-                        }
-                    }
-                    // if not updated, insert regardless of oversize
-                    if (!updated)
-                    {
-                        buffer.Add(new MotionData()
-                        {
-                            IsButton = v1,
-                            Status = v2,
-                            Value = v3
-                        });
-                    }
+                    buffer.Dequeue();
                 }
             }
         }
@@ -64,27 +41,10 @@ namespace SteeringWheel
         {
             lock (buffer)
             {
-                if (data.IsButton || buffer.Count <= MAX_SIZE)
+                buffer.Enqueue(data);
+                while (buffer.Count > MAX_SIZE)
                 {
-                    buffer.Add(data);
-                }
-                else
-                {
-                    bool updated = false;
-                    for (int idx = buffer.Count - 1; idx >= 0; idx--)
-                    {
-                        if (!buffer[idx].IsButton && buffer[idx].Status == data.Status)
-                        {
-                            buffer[idx].Value = buffer[idx].Value * 0.4f + data.Value * 0.6f; // take weighted average
-                            updated = true;
-                            break;
-                        }
-                    }
-                    // if not updated, insert regardless of oversize
-                    if (!updated)
-                    {
-                        buffer.Add(data);
-                    }
+                    buffer.Dequeue();
                 }
             }
         }
@@ -94,11 +54,17 @@ namespace SteeringWheel
             {
                 if (buffer.Count > 0)
                 {
-                    MotionData data = buffer[0];
-                    buffer.RemoveAt(0);
-                    return data;
+                    return buffer.Dequeue();
                 }
                 else return null;
+            }
+        }
+
+        public void Clear()
+        {
+            lock (buffer)
+            {
+                buffer.Clear();
             }
         }
     }
@@ -134,13 +100,13 @@ namespace SteeringWheel
 
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
-        private readonly int PACK_SIZE = 13;
-        private readonly int NUM_PACKS = 50; // 50 packs a time
+        private readonly int PACK_SIZE = 13; // 13 bytes per pack
+        private readonly int NUM_PACKS = 100; // 100 packs a time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
+        private readonly byte[] streamBuffer;
+        private int streamBufferOffset = 0;
         private bool isConnectionAllowed = false;
-        private readonly byte[] lastPack = new byte[13];
-        private int lastPackLength = 0;
 
         // bluetooth components
         private readonly Guid bthServerUUID = new Guid("a7bda841-7dbc-4179-9800-1a3eff463f1c");
@@ -166,6 +132,7 @@ namespace SteeringWheel
             sharedBuffer = buffer;
             Mode = ConnectionMode.Bluetooth;
             Status = ConnectionStatus.Default;
+            streamBuffer = new byte[PACK_SIZE * NUM_PACKS];
         }
 
         /// <summary>
@@ -173,14 +140,15 @@ namespace SteeringWheel
         /// </summary>
         public async Task Connect()
         {
+            sharedBuffer.Clear();
             mainWindow.ResetController();
             if (Mode == ConnectionMode.Bluetooth) await ConnectBluetooth();
             else await ConnectWifi();
             if (Status == ConnectionStatus.Default)
             {
-                Application.Current.Dispatcher.Invoke(new Action(() =>
+                Application.Current?.Dispatcher.Invoke(new Action(() =>
                 {
-                    mainWindow.UnlockRadioButtons();
+                    mainWindow?.UnlockRadioButtons();
                 }));
             }
         }
@@ -211,31 +179,32 @@ namespace SteeringWheel
             isConnectionAllowed = true;
             BluetoothClient tmp = null;
             bthTargetDeviceID = null;
-            while (isConnectionAllowed && bthListener != null)
+            try
             {
-                try
+                while (isConnectionAllowed && bthListener != null)
                 {
                     tmp = bthListener.AcceptBluetoothClient();
-                }
-                catch (InvalidOperationException e)
-                {
-                    Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
-                    break;
-                }
-                catch (SocketException e)
-                {
-                    Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
-                    break;
-                }
-                Debug.WriteLine("[Connection] ConnectBluetooth client detected, checking...");
-                // check for valid client
-                if (TestClient(tmp)) break;
-                else
-                {
-                    tmp.Dispose();
-                    tmp.Close();
+
+                    Debug.WriteLine("[Connection] ConnectBluetooth client detected, checking...");
+                    if (TestClient(tmp)) break;
+                    else
+                    {
+                        tmp.Dispose();
+                        tmp.Close();
+                    }
                 }
             }
+            catch (InvalidOperationException e)
+            {
+                Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
+                return;
+            }
+            catch (SocketException e)
+            {
+                Debug.WriteLine("[Connection] ConnectBluetooth -> " + e.Message);
+                return;
+            }
+            // check for valid client
             if (tmp != null)
             {
                 tmp.Dispose();
@@ -309,40 +278,7 @@ namespace SteeringWheel
                         while (isConnectionAllowed && bthClient != null)
                         {
                             if (bthTaskToken.IsCancellationRequested) break;
-                            // read data into a buffer
-                            byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
-                            Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
-                            int size = await bthStream.ReadAsync(buffer, lastPackLength, PACK_SIZE * NUM_PACKS, bthTaskToken.Token);
-                            if (size <= 0) break;
-                            int totalSize = size + lastPackLength;
-                            // process data into data packs
-                            int idx = 0;
-                            while (idx <= totalSize - PACK_SIZE)
-                            {
-                                // check for separator
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                if (DecodeInt(placeholder) != DATA_SEPARATOR)
-                                {
-                                    idx++;
-                                    continue;
-                                }
-                                idx += 4;
-                                // get following data pack
-                                MotionData data = new MotionData();
-                                data.IsButton = BitConverter.ToBoolean(buffer, idx);
-                                idx++;
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                data.Status = DecodeInt(placeholder);
-                                idx += 4;
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                data.Value = DecodeFloat(placeholder);
-                                idx += 4;
-                                // add to shared buffer
-                                sharedBuffer.AddData(data);
-                            }
-                            // check for remaining pack, and store for next loop
-                            Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
-                            lastPackLength = totalSize - idx;
+                            await ReadStream(bthStream, bthTaskToken.Token);
                         }
                     }
                 }
@@ -544,40 +480,7 @@ namespace SteeringWheel
                         while (isConnectionAllowed && wifiClient != null)
                         {
                             if (wifiTaskToken.IsCancellationRequested) break;
-                            // read data into a buffer
-                            byte[] buffer = new byte[PACK_SIZE * (NUM_PACKS + 1)];
-                            Array.Copy(lastPack, 0, buffer, 0, lastPackLength); // add last pack
-                            int size = await wifiStream.ReadAsync(buffer, lastPackLength, PACK_SIZE * NUM_PACKS, wifiTaskToken.Token);
-                            if (size <= 0) break;
-                            int totalSize = size + lastPackLength;
-                            // process data into data packs
-                            int idx = 0;
-                            while (idx <= totalSize - PACK_SIZE)
-                            {
-                                // check for separator
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                if (DecodeInt(placeholder) != DATA_SEPARATOR)
-                                {
-                                    idx++;
-                                    continue;
-                                }
-                                idx += 4;
-                                // get following data pack
-                                MotionData data = new MotionData();
-                                data.IsButton = BitConverter.ToBoolean(buffer, idx);
-                                idx++;
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                data.Status = DecodeInt(placeholder);
-                                idx += 4;
-                                Array.Copy(buffer, idx, placeholder, 0, 4);
-                                data.Value = DecodeFloat(placeholder);
-                                idx += 4;
-                                // add to shared buffer
-                                sharedBuffer.AddData(data);
-                            }
-                            // check for remaining pack, and store for next loop
-                            Array.Copy(buffer, idx, lastPack, 0, totalSize - idx);
-                            lastPackLength = totalSize - idx;
+                            await ReadStream(wifiStream, wifiTaskToken.Token);
                         }
                     }
                 }
@@ -596,6 +499,52 @@ namespace SteeringWheel
                 await Disconnect();
             }, wifiTaskToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             Debug.WriteLine("[Connection] ConnectWifi task started");
+        }
+
+        private async Task ReadStream(NetworkStream stream, CancellationToken token)
+        {
+            // read data into a buffer
+            int readSize = await stream.ReadAsync(streamBuffer, streamBufferOffset, streamBuffer.Length - streamBufferOffset, token);
+            using (var memory = new MemoryStream(streamBuffer, 0, streamBufferOffset + readSize, false))
+            {
+                var reader = new BufferedBinaryReader(memory);
+                try
+                {
+                    int readIdx = 0;
+                    int readTotal = streamBufferOffset + readSize;
+                    while (readIdx < readTotal)
+                    {
+                        // find data separator
+                        while (readIdx < readTotal - PACK_SIZE && !reader.ReadInt32().Equals(DATA_SEPARATOR))
+                        {
+                            reader.SetReadPosition(++readIdx);
+                        }
+
+                        // read next packet
+                        if (readIdx < readTotal - PACK_SIZE)
+                        {
+                            MotionData data = new MotionData()
+                            {
+                                IsButton = reader.ReadBoolean(),
+                                Status = reader.ReadInt32(),
+                                Value = reader.ReadSingle()
+                            };
+                            sharedBuffer.AddData(data);
+                            readIdx += PACK_SIZE;
+                        }
+                        else
+                        {
+                            streamBufferOffset = readTotal - readIdx;
+                            Buffer.BlockCopy(streamBuffer, readIdx, streamBuffer, 0, streamBufferOffset);
+                            break;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine($"[Connection] ReadStream -> {e}");
+                }
+            }
         }
 
         /// <summary>
@@ -701,6 +650,7 @@ namespace SteeringWheel
         /// </summary>
         public async Task Disconnect()
         {
+            isConnectionAllowed = false;
             if (Mode == ConnectionMode.Bluetooth)
             {
                 if (bthClient != null)
@@ -712,7 +662,6 @@ namespace SteeringWheel
                 // shut down task
                 if (bthTask?.IsCompleted == false)
                 {
-                    isConnectionAllowed = false;
                     bthTaskToken.Cancel();
                     try
                     {
@@ -759,7 +708,6 @@ namespace SteeringWheel
                 // shut down task
                 if (wifiTask?.IsCompleted == false)
                 {
-                    isConnectionAllowed = false;
                     wifiTaskToken.Cancel();
                     try
                     {
@@ -867,18 +815,6 @@ namespace SteeringWheel
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(array);
             return BitConverter.ToInt32(array, 0);
-        }
-
-        /// <summary>
-        /// decode float from stream byte array
-        /// </summary>
-        /// <param name="array">byte array</param>
-        /// <returns></returns>
-        public static float DecodeFloat(byte[] array)
-        {
-            if (BitConverter.IsLittleEndian)
-                Array.Reverse(array);
-            return BitConverter.ToSingle(array, 0);
         }
     }
 }

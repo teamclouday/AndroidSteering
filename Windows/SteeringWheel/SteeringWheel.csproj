@@ -155,6 +155,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BufferedBinaryReader.cs" />
     <Compile Include="SelectNetworkWindow.xaml.cs">
       <DependentUpon>SelectNetworkWindow.xaml</DependentUpon>
     </Compile>
