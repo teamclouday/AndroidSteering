@@ -26,7 +26,11 @@ namespace SteeringWheel
         SetAccAngle = 1,
         ResetSteerAngle = 2,
         ResetAccAngle = 3,
-        SetAccRatio = 4
+        SetAccRatio = 4,
+        SetLeftStickX = 5,
+        SetLeftStickY = 6,
+        SetRightStickX = 7,
+        SetRightStickY = 8,
     }
 
     /// <summary>
@@ -45,7 +49,8 @@ namespace SteeringWheel
         RIGHT = 8,
         LEFT = 9,
         BACK = 10,
-        START = 11
+        START = 11,
+        HOME = 12,
     }
 
     /// <summary>
@@ -180,40 +185,56 @@ namespace SteeringWheel
                         switch ((MotionButton)data.Status)
                         {
                             case MotionButton.A:
-                                TriggerControl(ControlButton.A);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.A);
+                                else ButtonUp(ControlButton.A);
                                 break;
                             case MotionButton.B:
-                                TriggerControl(ControlButton.B);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.B);
+                                else ButtonUp(ControlButton.B);
                                 break;
                             case MotionButton.X:
-                                TriggerControl(ControlButton.X);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.X);
+                                else ButtonUp(ControlButton.X);
                                 break;
                             case MotionButton.Y:
-                                TriggerControl(ControlButton.Y);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.Y);
+                                else ButtonUp(ControlButton.Y);
                                 break;
                             case MotionButton.LB:
-                                TriggerControl(ControlButton.LB);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.LB);
+                                else ButtonUp(ControlButton.LB);
                                 break;
                             case MotionButton.RB:
-                                TriggerControl(ControlButton.RB);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.RB);
+                                else ButtonUp(ControlButton.RB);
                                 break;
                             case MotionButton.START:
-                                TriggerControl(ControlButton.START);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.START);
+                                else ButtonUp(ControlButton.START);
                                 break;
                             case MotionButton.BACK:
-                                TriggerControl(ControlButton.BACK);
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.BACK);
+                                else ButtonUp(ControlButton.BACK);
+                                break;
+                            case MotionButton.HOME:
+                                if (data.Value > 0.0f) ButtonDown(ControlButton.HOME);
+                                else ButtonUp(ControlButton.HOME);
                                 break;
                             case MotionButton.UP:
-                                TriggerControl(ControlAxis.POVUp);
+                                if (data.Value > 0.0f) TriggerControlEnter(ControlAxis.POVUp);
+                                else TriggerControlLeave(ControlAxis.POVUp);
                                 break;
                             case MotionButton.DOWN:
-                                TriggerControl(ControlAxis.POVDown);
+                                if (data.Value > 0.0f) TriggerControlEnter(ControlAxis.POVDown);
+                                else TriggerControlLeave(ControlAxis.POVDown);
                                 break;
                             case MotionButton.LEFT:
-                                TriggerControl(ControlAxis.POVLeft);
+                                if (data.Value > 0.0f) TriggerControlEnter(ControlAxis.POVLeft);
+                                else TriggerControlLeave(ControlAxis.POVLeft);
                                 break;
                             case MotionButton.RIGHT:
-                                TriggerControl(ControlAxis.POVRight);
+                                if (data.Value > 0.0f) TriggerControlEnter(ControlAxis.POVRight);
+                                else TriggerControlLeave(ControlAxis.POVRight);
                                 break;
                         }
                     }
@@ -251,6 +272,42 @@ namespace SteeringWheel
                                     }
                                 }
                                 break;
+                            case MotionStatus.SetLeftStickX:
+                                {
+                                    float val = axisMaxHalf * data.Value + axisMaxHalf;
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisX = (int)val;
+                                    }
+                                    break;
+                                }
+                            case MotionStatus.SetLeftStickY:
+                                {
+                                    float val = -axisMaxHalf * data.Value + axisMaxHalf;
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisY = (int)val;
+                                    }
+                                    break;
+                                }
+                            case MotionStatus.SetRightStickX:
+                                {
+                                    float val = axisMaxHalf * data.Value + axisMaxHalf;
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisXRot = (int)val;
+                                    }
+                                    break;
+                                }
+                            case MotionStatus.SetRightStickY:
+                                {
+                                    float val = -axisMaxHalf * data.Value + axisMaxHalf;
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisYRot = (int)val;
+                                    }
+                                    break;
+                                }
                         }
                     }
                 }
@@ -374,7 +431,7 @@ namespace SteeringWheel
         /// <summary>
         /// reset vjoy controller axis
         /// </summary>
-        private void ResetVJoy()
+        public void ResetVJoy()
         {
             joystick.ResetAll();
             joyReport.bHats = 0xFFFFFFFF;
@@ -416,16 +473,26 @@ namespace SteeringWheel
         {
             Task.Run(async () =>
             {
-                lock (joyReportLock)
-                {
-                    joyReport.Buttons |= (uint)(0x1 << ((int)button - 1));
-                }
+                ButtonDown(button);
                 await Task.Delay(triggerInterval);
-                lock (joyReportLock)
-                {
-                    joyReport.Buttons &= ~(uint)(0x1 << ((int)button - 1));
-                }
+                ButtonUp(button);
             });
+        }
+
+        public void ButtonDown(ControlButton button)
+        {
+            lock (joyReportLock)
+            {
+                joyReport.Buttons |= (uint)(0x1 << ((int)button - 1));
+            }
+        }
+
+        public void ButtonUp(ControlButton button)
+        {
+            lock (joyReportLock)
+            {
+                joyReport.Buttons &= ~(uint)(0x1 << ((int)button - 1));
+            }
         }
 
         /// <summary>
@@ -436,74 +503,84 @@ namespace SteeringWheel
         {
             Task.Run(async () =>
             {
-                lock (joyReportLock)
-                {
-                    switch (axis)
-                    {
-                        case ControlAxis.POVUp:
-                            joyReport.bHats = GetDiscPov(0);
-                            break;
-                        case ControlAxis.POVRight:
-                            joyReport.bHats = GetDiscPov(1);
-                            break;
-                        case ControlAxis.POVDown:
-                            joyReport.bHats = GetDiscPov(2);
-                            break;
-                        case ControlAxis.POVLeft:
-                            joyReport.bHats = GetDiscPov(3);
-                            break;
-                        case ControlAxis.X:
-                            joyReport.AxisX = 0;
-                            break;
-                        case ControlAxis.XRot:
-                            joyReport.AxisXRot = 0;
-                            break;
-                        case ControlAxis.Y:
-                            joyReport.AxisY = 0;
-                            break;
-                        case ControlAxis.YRot:
-                            joyReport.AxisYRot = 0;
-                            break;
-                        case ControlAxis.Z:
-                            joyReport.AxisZ = axisMaxHalf;
-                            break;
-                        case ControlAxis.ZRot:
-                            joyReport.AxisZRot = axisMaxHalf;
-                            break;
-                    }
-                }
+                TriggerControlEnter(axis);
                 await Task.Delay(triggerInterval);
-                lock (joyReportLock)
-                {
-                    switch (axis)
-                    {
-                        case ControlAxis.POVUp:
-                        case ControlAxis.POVRight:
-                        case ControlAxis.POVDown:
-                        case ControlAxis.POVLeft:
-                            joyReport.bHats = 0xFFFFFFFF;
-                            break;
-                        case ControlAxis.X:
-                            joyReport.AxisX = axisMaxHalf;
-                            break;
-                        case ControlAxis.XRot:
-                            joyReport.AxisXRot = axisMaxHalf;
-                            break;
-                        case ControlAxis.Y:
-                            joyReport.AxisY = axisMaxHalf;
-                            break;
-                        case ControlAxis.YRot:
-                            joyReport.AxisYRot = axisMaxHalf;
-                            break;
-                        case ControlAxis.Z:
-                            joyReport.AxisZ = 0;
-                            break;
-                        case ControlAxis.ZRot:
-                            joyReport.AxisZRot = 0;
-                            break;
-                    }
-                }
+                TriggerControlLeave(axis);
             });
+        }
+
+        public void TriggerControlEnter(ControlAxis axis)
+        {
+            lock (joyReportLock)
+            {
+                switch (axis)
+                {
+                    case ControlAxis.POVUp:
+                        joyReport.bHats = GetDiscPov(0);
+                        break;
+                    case ControlAxis.POVRight:
+                        joyReport.bHats = GetDiscPov(1);
+                        break;
+                    case ControlAxis.POVDown:
+                        joyReport.bHats = GetDiscPov(2);
+                        break;
+                    case ControlAxis.POVLeft:
+                        joyReport.bHats = GetDiscPov(3);
+                        break;
+                    case ControlAxis.X:
+                        joyReport.AxisX = 0;
+                        break;
+                    case ControlAxis.XRot:
+                        joyReport.AxisXRot = 0;
+                        break;
+                    case ControlAxis.Y:
+                        joyReport.AxisY = 0;
+                        break;
+                    case ControlAxis.YRot:
+                        joyReport.AxisYRot = 0;
+                        break;
+                    case ControlAxis.Z:
+                        joyReport.AxisZ = axisMaxHalf;
+                        break;
+                    case ControlAxis.ZRot:
+                        joyReport.AxisZRot = axisMaxHalf;
+                        break;
+                }
+            }
+        }
+
+        public void TriggerControlLeave(ControlAxis axis)
+        {
+            lock (joyReportLock)
+            {
+                switch (axis)
+                {
+                    case ControlAxis.POVUp:
+                    case ControlAxis.POVRight:
+                    case ControlAxis.POVDown:
+                    case ControlAxis.POVLeft:
+                        joyReport.bHats = 0xFFFFFFFF;
+                        break;
+                    case ControlAxis.X:
+                        joyReport.AxisX = axisMaxHalf;
+                        break;
+                    case ControlAxis.XRot:
+                        joyReport.AxisXRot = axisMaxHalf;
+                        break;
+                    case ControlAxis.Y:
+                        joyReport.AxisY = axisMaxHalf;
+                        break;
+                    case ControlAxis.YRot:
+                        joyReport.AxisYRot = axisMaxHalf;
+                        break;
+                    case ControlAxis.Z:
+                        joyReport.AxisZ = 0;
+                        break;
+                    case ControlAxis.ZRot:
+                        joyReport.AxisZRot = 0;
+                        break;
+                }
+            }
         }
 
         /// <summary>

@@ -60,10 +60,10 @@ public class Connection {
             }
         }
 
-        public void addData(int status, float val) {
+        public void addData(MotionStatus status, float val) {
             if (!running) return;
             synchronized (this) {
-                buff.add(new Motion.MyMove(false, status, val));
+                buff.add(new Motion.MyMove(false, status.getVal(), val));
                 int idx = buff.size() - 1;
                 while (buff.size() > MAX_SIZE && idx >= 0) {
                     if (!buff.get(idx).MotionButton)
@@ -73,10 +73,10 @@ public class Connection {
             }
         }
 
-        public void addData(MotionButton button) {
+        public void addData(MotionButton button, boolean pressed) {
             if (!running) return;
             synchronized (this) {
-                buff.add(new Motion.MyMove(true, button.getVal(), 0.0f));
+                buff.add(new Motion.MyMove(true, button.getVal(), pressed ? 1.0f : 0.0f));
                 int idx = buff.size() - 1;
                 while (buff.size() > MAX_SIZE && idx >= 0) {
                     if (!buff.get(idx).MotionButton)

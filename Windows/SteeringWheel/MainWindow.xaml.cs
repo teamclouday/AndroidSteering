@@ -266,6 +266,14 @@ namespace SteeringWheel
         }
 
         /// <summary>
+        /// Reset controller (used by connection)
+        /// </summary>
+        public void ResetController()
+        {
+            controllerService.ResetVJoy();
+        }
+
+        /// <summary>
         /// controller button click callback
         /// </summary>
         /// <param name="sender"></param>

@@ -135,7 +135,7 @@ namespace SteeringWheel
         private readonly int MAX_WAIT_TIME = 1500;
         private readonly int DATA_SEPARATOR = 10086;
         private readonly int PACK_SIZE = 13;
-        private readonly int NUM_PACKS = 4; // 4 packs a time
+        private readonly int NUM_PACKS = 50; // 50 packs a time
         private readonly int DEVICE_CHECK_EXPECTED = 123456;
         private readonly int DEVICE_CHECK_DATA = 654321;
         private bool isConnectionAllowed = false;
@@ -173,6 +173,7 @@ namespace SteeringWheel
         /// </summary>
         public async Task Connect()
         {
+            mainWindow.ResetController();
             if (Mode == ConnectionMode.Bluetooth) await ConnectBluetooth();
             else await ConnectWifi();
             if (Status == ConnectionStatus.Default)
@@ -793,6 +794,7 @@ namespace SteeringWheel
                     AddLog("(wifi) Client disconnected");
                 Debug.WriteLine("[Connection] Disconnect client disconnected");
             }
+            mainWindow.ResetController();
         }
 
         /// <summary>

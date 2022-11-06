@@ -14,6 +14,7 @@ import android.os.Looper;
 import android.os.PersistableBundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -41,10 +42,7 @@ import java.util.Objects;
 // Reference of navigation drawer: https://guides.codepath.com/android/fragment-navigation-drawer
 
 enum ControllerMode {
-    None,
-    Default,
-    Alter,
-    GamePad
+    None, Default, Alter, GamePad
 }
 
 public class MainActivity extends AppCompatActivity {
@@ -76,19 +74,17 @@ public class MainActivity extends AppCompatActivity {
                     float progressVertical = (180.0f - serviceMotion.readPitch()) / 360.0f * 100.0f;
                     vHorizontal.setProgress((int) progressHorizontal);
                     vVertical.setProgress((int) progressVertical);
-                } else if (controllerMode == ControllerMode.GamePad) {
-                    // in GamePad mode, fill some fake data, so that button signal can be sent faster
-                    globalBuffer.addData(MotionStatus.SetSteerAngle.getVal(), 0.0f);
                 }
                 if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
                     if (!LTPressed && !RTPressed)
-                        globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
+                        globalBuffer.addData(MotionStatus.ResetAccAngle, 0.0f);
                     if (LTPressed) {
                         ProgressBar bar = findViewById(R.id.progressBarLT);
-                        globalBuffer.addData(MotionStatus.SetAccRatio.getVal(), -bar.getProgress() / (float) bar.getMax());
-                    } else if (RTPressed) {
+                        globalBuffer.addData(MotionStatus.SetAccRatio, -bar.getProgress() / (float) bar.getMax());
+                    }
+                    if (RTPressed && (!LTPressed || controllerMode == ControllerMode.GamePad)) {
                         ProgressBar bar = findViewById(R.id.progressBarRT);
-                        globalBuffer.addData(MotionStatus.SetAccRatio.getVal(), bar.getProgress() / (float) bar.getMax());
+                        globalBuffer.addData(MotionStatus.SetAccRatio, bar.getProgress() / (float) bar.getMax());
                     }
                 }
             } catch (Exception e) {
@@ -143,11 +139,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupDrawerContent(NavigationView navigationView) {
-        navigationView.setNavigationItemSelectedListener(
-                menuItem -> {
-                    selectDrawerItem(menuItem);
-                    return true;
-                });
+        navigationView.setNavigationItemSelectedListener(menuItem -> {
+            selectDrawerItem(menuItem);
+            return true;
+        });
     }
 
     public void selectDrawerItem(MenuItem menuItem) {
@@ -195,9 +190,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.flContent, fragment)
-                .commit();
+        fragmentManager.beginTransaction().replace(R.id.flContent, fragment).commit();
     }
 
     @Override
@@ -231,11 +224,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean checkBTH() {
         BluetoothAdapter test = BluetoothAdapter.getDefaultAdapter();
         if (test == null) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Not Compatible")
-                    .setMessage("Your phone does not support Bluetooth")
-                    .setPositiveButton("OK", (dialog, which) -> System.exit(0))
-                    .show();
+            new AlertDialog.Builder(this).setTitle("Not Compatible").setMessage("Your phone does not support Bluetooth").setPositiveButton("OK", (dialog, which) -> System.exit(0)).show();
             return false;
         }
         if (!test.isEnabled()) {
@@ -250,11 +239,7 @@ public class MainActivity extends AppCompatActivity {
         // Reference: https://stackoverflow.com/questions/3841317/how-do-i-see-if-wi-fi-is-connected-on-android
         NetworkInfo test = ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (test == null) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Not Compatible")
-                    .setMessage("Your phone cannot access wifi")
-                    .setPositiveButton("OK", (dialog, which) -> System.exit(0))
-                    .show();
+            new AlertDialog.Builder(this).setTitle("Not Compatible").setMessage("Your phone cannot access wifi").setPositiveButton("OK", (dialog, which) -> System.exit(0)).show();
             return false;
         }
         if (!test.isConnected()) {
@@ -268,11 +253,7 @@ public class MainActivity extends AppCompatActivity {
     public void checkSensor() {
         SensorManager test = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (test == null || test.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD) == null || test.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null) {
-            new AlertDialog.Builder(this)
-                    .setTitle("Not Compatible")
-                    .setMessage("Your phone does not have required sensors")
-                    .setPositiveButton("OK", (dialog, which) -> System.exit(0))
-                    .show();
+            new AlertDialog.Builder(this).setTitle("Not Compatible").setMessage("Your phone does not have required sensors").setPositiveButton("OK", (dialog, which) -> System.exit(0)).show();
         }
     }
 
@@ -349,57 +330,74 @@ public class MainActivity extends AppCompatActivity {
 
     // send data to reset controller motion status
     public void resetController() {
-        globalBuffer.addData(MotionStatus.ResetSteerAngle.getVal(), 0.0f);
-        globalBuffer.addData(MotionStatus.ResetAccAngle.getVal(), 0.0f);
+        globalBuffer.addData(MotionStatus.ResetSteerAngle, 0.0f);
+        globalBuffer.addData(MotionStatus.ResetAccAngle, 0.0f);
     }
 
     // callback for rest buttons
-    public void pressX(View view) {
-        globalBuffer.addData(MotionButton.X);
+    public boolean touchX(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.X);
     }
 
-    public void pressY(View view) {
-        globalBuffer.addData(MotionButton.Y);
+    public boolean touchY(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.Y);
     }
 
-    public void pressA(View view) {
-        globalBuffer.addData(MotionButton.A);
+    public boolean touchA(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.A);
     }
 
-    public void pressB(View view) {
-        globalBuffer.addData(MotionButton.B);
+    public boolean touchB(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.B);
     }
 
-    public void pressLB(View view) {
-        globalBuffer.addData(MotionButton.LB);
+    public boolean touchLB(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.LB);
     }
 
-    public void pressRB(View view) {
-        globalBuffer.addData(MotionButton.RB);
+    public boolean touchRB(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.RB);
     }
 
-    public void pressBACK(View view) {
-        globalBuffer.addData(MotionButton.BACK);
+    public boolean touchBACK(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.BACK);
     }
 
-    public void pressSTART(View view) {
-        globalBuffer.addData(MotionButton.START);
+    public boolean touchSTART(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.START);
     }
 
-    public void pressUP(View view) {
-        globalBuffer.addData(MotionButton.UP);
+    public boolean touchUP(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.UP);
     }
 
-    public void pressDOWN(View view) {
-        globalBuffer.addData(MotionButton.DOWN);
+    public boolean touchDOWN(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.DOWN);
     }
 
-    public void pressLEFT(View view) {
-        globalBuffer.addData(MotionButton.LEFT);
+    public boolean touchLEFT(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.LEFT);
     }
 
-    public void pressRIGHT(View view) {
-        globalBuffer.addData(MotionButton.RIGHT);
+    public boolean touchRIGHT(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.RIGHT);
+    }
+
+    public boolean touchHOME(View view, MotionEvent e) {
+        return touchButton(view, e, MotionButton.HOME);
+    }
+
+    private boolean touchButton(View view, MotionEvent e, MotionButton button) {
+        switch (e.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                globalBuffer.addData(button, true);
+                return true;
+            case MotionEvent.ACTION_CANCEL:
+            case MotionEvent.ACTION_UP:
+                globalBuffer.addData(button, false);
+                return true;
+        }
+        return false;
     }
 
     public boolean touchLT(View view, MotionEvent e) {
@@ -442,5 +440,27 @@ public class MainActivity extends AppCompatActivity {
                 return true;
         }
         return false;
+    }
+
+    public void moveLeftStick(int angle, int strength) {
+        Pair<Float, Float> XY = computeJoyStickXY(angle, strength);
+        globalBuffer.addData(MotionStatus.SetLeftStickX, XY.first);
+        globalBuffer.addData(MotionStatus.SetLeftStickY, XY.second);
+    }
+
+    public void moveRightStick(int angle, int strength) {
+        Pair<Float, Float> XY = computeJoyStickXY(angle, strength);
+        globalBuffer.addData(MotionStatus.SetRightStickX, XY.first);
+        globalBuffer.addData(MotionStatus.SetRightStickY, XY.second);
+    }
+
+    private Pair<Float, Float> computeJoyStickXY(int angle, int strength) {
+        double r = Math.toRadians(angle);
+        double s = strength / 100.0;
+
+        float x = (float)(Math.cos(r) * s);
+        float y = (float)(Math.sin(r) * s);
+
+        return new Pair<>(x, y);
     }
 }

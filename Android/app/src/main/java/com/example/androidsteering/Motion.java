@@ -17,7 +17,11 @@ enum MotionStatus {
     SetAccAngle(1),
     ResetSteerAngle(2),
     ResetAccAngle(3),
-    SetAccRatio(4);
+    SetAccRatio(4),
+    SetLeftStickX(5),
+    SetLeftStickY(6),
+    SetRightStickX(7),
+    SetRightStickY(8);
 
     private final int val;
 
@@ -42,7 +46,8 @@ enum MotionButton {
     RIGHT(8),
     LEFT(9),
     BACK(10),
-    START(11);
+    START(11),
+    HOME(12);
 
     private final int val;
 
@@ -84,7 +89,7 @@ public class Motion implements SensorEventListener {
     private volatile float motionPitch = 0.0f;
     private volatile float motionRoll = 0.0f;
 
-    private Thread dataSubmitThread = null;
+    private Thread dataSubmitThread;
     private volatile boolean dataSubmitShouldStop;
     private final int MAX_WAIT_TIME = 1000;
     private final int DATA_UPDATE_FREQ = 5; // wait for milliseconds for next update
@@ -99,8 +104,10 @@ public class Motion implements SensorEventListener {
 
     // start sensor callback
     public void start() {
-        if (dataSubmitThread != null && dataSubmitThread.isAlive())
+        if (dataSubmitThread != null && dataSubmitThread.isAlive()) {
             stop();
+        }
+
         // sample period is set to 10ms
         if (!sensorManager.registerListener(this, accSensor, SensorManager.SENSOR_DELAY_GAME))
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register accelerometer");
@@ -108,8 +115,10 @@ public class Motion implements SensorEventListener {
             Log.d(mainActivity.getString(R.string.logTagMotion), "Failed to register magnetic field");
         else
             Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener registered");
+
         // start data submission thread
         dataSubmitShouldStop = false;
+
         dataSubmitThread = new Thread(() -> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);
             while (!dataSubmitShouldStop) {
@@ -129,6 +138,7 @@ public class Motion implements SensorEventListener {
     public void stop() {
         sensorManager.unregisterListener(this);
         Log.d(mainActivity.getString(R.string.logTagMotion), "Sensor listener unregistered");
+
         dataSubmitShouldStop = true;
         if (dataSubmitThread != null && dataSubmitThread.isAlive()) {
             try {
@@ -167,11 +177,6 @@ public class Motion implements SensorEventListener {
         // for steering, check whether it is over 90 degrees either side
         if (orientation[2] > 0.0)
             pitch = pitch > 0.0 ? Math.PI - Math.abs(pitch) : Math.abs(pitch) - Math.PI;
-
-//        Log.d("MotionDebug", String.format("[%4.0f,%4.0f,%4.0f] - %4.0f, %4.0f",
-//                Math.toDegrees(orientation[0]), Math.toDegrees(orientation[1]), Math.toDegrees(orientation[2]),
-//                Math.toDegrees(pitch), Math.toDegrees(roll)
-//        ));
 
         updatePitch((float) Math.toDegrees(pitch));
         updateRoll((float) Math.toDegrees(roll));

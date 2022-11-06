@@ -10,4 +10,8 @@
     <color name="colorButtonB">#F44336</color>
     <color name="colorButtonX">#2196F3</color>
     <color name="colorButtonY">#FFEB3B</color>
+
+    <color name="joystickBackground">#6574C7</color>
+    <color name="joystickBorder">#374AB3</color>
+    <color name="joystickButton">#B8446B</color>
 </resources>
