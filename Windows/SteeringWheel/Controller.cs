@@ -31,6 +31,8 @@ namespace SteeringWheel
         SetLeftStickY = 6,
         SetRightStickX = 7,
         SetRightStickY = 8,
+        SetLTValue = 9,
+        SetRTValue = 10,
     }
 
     /// <summary>
@@ -305,6 +307,22 @@ namespace SteeringWheel
                                     lock (joyReportLock)
                                     {
                                         joyReport.AxisYRot = (int)val;
+                                    }
+                                    break;
+                                }
+                            case MotionStatus.SetLTValue:
+                                {
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisZ = (int)(data.Value * axisMax);
+                                    }
+                                    break;
+                                }
+                            case MotionStatus.SetRTValue:
+                                {
+                                    lock (joyReportLock)
+                                    {
+                                        joyReport.AxisZRot = (int)(data.Value * axisMax);
                                     }
                                     break;
                                 }

@@ -21,7 +21,9 @@ enum MotionStatus {
     SetLeftStickX(5),
     SetLeftStickY(6),
     SetRightStickX(7),
-    SetRightStickY(8);
+    SetRightStickY(8),
+    SetLTValue(9),
+    SetRTValue(10);
 
     private final int val;
 

@@ -102,6 +102,7 @@ See [Game Steering Wheel Settings](SETTINGS.md) for more details.
 - [x] Slider bar on phone for LT/RT controls
 - [x] Memorized user settings
 - [x] Connection under same network (does not have to be Wifi hotspot)
+- [x] Fully implemented Xbox controller emulator
 
 ------
 
@@ -115,15 +116,15 @@ Pre-built installers can be found [here](https://github.com/teamclouday/AndroidS
 
 __Android Side__
 
-<img src="Assets/phone1.jpg" width="400" alt="phone1">
+<img src="Assets/phone1.png" width="600" alt="phone1">
 
-<img src="Assets/phone2.jpg" width="400" alt="phone2">
+<img src="Assets/phone2.png" width="600" alt="phone2">
 
-<img src="Assets/phone3.jpg" width="400" alt="phone3">
+<img src="Assets/phone3.png" width="600" alt="phone3">
 
-<img src="Assets/phone4.jpg" width="400" alt="phone4">
+<img src="Assets/phone4.png" width="600" alt="phone4">
 
-<img src="Assets/phone5.jpg" width="400" alt="phone6">
+<img src="Assets/phone5.png" width="600" alt="phone6">
 
 __Windows Side__
 

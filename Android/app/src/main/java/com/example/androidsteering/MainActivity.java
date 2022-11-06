@@ -75,16 +75,27 @@ public class MainActivity extends AppCompatActivity {
                     vHorizontal.setProgress((int) progressHorizontal);
                     vVertical.setProgress((int) progressVertical);
                 }
-                if (controllerMode == ControllerMode.Alter || controllerMode == ControllerMode.GamePad) {
-                    if (!LTPressed && !RTPressed)
+                if (controllerMode == ControllerMode.Alter) {
+                    if (!LTPressed && !RTPressed) {
                         globalBuffer.addData(MotionStatus.ResetAccAngle, 0.0f);
-                    if (LTPressed) {
+                    } else if (LTPressed) {
                         ProgressBar bar = findViewById(R.id.progressBarLT);
                         globalBuffer.addData(MotionStatus.SetAccRatio, -bar.getProgress() / (float) bar.getMax());
-                    }
-                    if (RTPressed && (!LTPressed || controllerMode == ControllerMode.GamePad)) {
+                    } else if (RTPressed) {
                         ProgressBar bar = findViewById(R.id.progressBarRT);
                         globalBuffer.addData(MotionStatus.SetAccRatio, bar.getProgress() / (float) bar.getMax());
+                    }
+                } else if (controllerMode == ControllerMode.GamePad) {
+                    if (!LTPressed && !RTPressed) {
+                        globalBuffer.addData(MotionStatus.ResetAccAngle, 0.0f);
+                    }
+                    if (LTPressed) {
+                        ProgressBar bar = findViewById(R.id.progressBarLT);
+                        globalBuffer.addData(MotionStatus.SetLTValue, bar.getProgress() / (float) bar.getMax());
+                    }
+                    if (RTPressed) {
+                        ProgressBar bar = findViewById(R.id.progressBarRT);
+                        globalBuffer.addData(MotionStatus.SetRTValue, bar.getProgress() / (float) bar.getMax());
                     }
                 }
             } catch (Exception e) {
@@ -458,8 +469,8 @@ public class MainActivity extends AppCompatActivity {
         double r = Math.toRadians(angle);
         double s = strength / 100.0;
 
-        float x = (float)(Math.cos(r) * s);
-        float y = (float)(Math.sin(r) * s);
+        float x = (float) (Math.cos(r) * s);
+        float y = (float) (Math.sin(r) * s);
 
         return new Pair<>(x, y);
     }
