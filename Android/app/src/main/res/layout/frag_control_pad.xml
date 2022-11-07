@@ -8,12 +8,12 @@
         android:layout_width="64dp"
         android:layout_height="match_parent"
         android:layout_marginStart="32dp"
-        android:text="@string/buttonLT"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="16dp"
+        android:text="@string/buttonLT"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/buttonLB"
@@ -23,41 +23,41 @@
         android:layout_marginTop="16dp"
         android:text="@string/buttonLB"
         app:layout_constraintStart_toEndOf="@+id/buttonLT"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/buttonRT"
         android:layout_width="64dp"
         android:layout_height="match_parent"
-        android:layout_marginEnd="32dp"
         android:layout_marginTop="16dp"
+        android:layout_marginEnd="32dp"
         android:layout_marginBottom="16dp"
         android:text="@string/buttonRT"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/buttonRB"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
         android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
         android:text="@string/buttonRB"
         app:layout_constraintEnd_toStartOf="@+id/buttonRT"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/buttonBACK"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:layout_marginStart="4dp"
+        android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:text="@string/buttonBACK"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/buttonRB"
-        app:layout_constraintStart_toEndOf="@+id/buttonSTART"/>
+        app:layout_constraintStart_toEndOf="@+id/buttonSTART"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/buttonSTART"
@@ -67,78 +67,78 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="4dp"
         android:text="@string/buttonSTART"
+        app:layout_constraintEnd_toStartOf="@+id/buttonBACK"
         app:layout_constraintStart_toEndOf="@+id/buttonLB"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/buttonBACK"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/directionalPad"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="64dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="-8dp"
+        android:layout_marginTop="-16dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintStart_toEndOf="@+id/buttonLT"
-        app:layout_constraintTop_toBottomOf="@+id/joystickLeft"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/abxyPad">
+        app:layout_constraintEnd_toStartOf="@+id/abxyPad"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toEndOf="@+id/buttonLT"
+        app:layout_constraintTop_toBottomOf="@+id/joystickLeft">
 
         <Button
             android:id="@+id/buttonLEFT"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="5dp"
             android:text="@string/buttonLEFT"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="5dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/buttonRIGHT"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/buttonUP"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="5dp"
             android:text="@string/buttonUP"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="5dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
             app:layout_constraintBottom_toTopOf="@+id/buttonLEFT"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <Button
             android:id="@+id/buttonRIGHT"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="5dp"
             android:text="@string/buttonRIGHT"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="5dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/buttonLEFT"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/buttonDOWN"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="5dp"
             android:text="@string/buttonDOWN"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:padding="5dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
-            app:layout_constraintTop_toBottomOf="@+id/buttonLEFT"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toBottomOf="@+id/buttonLEFT" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -146,74 +146,75 @@
         android:id="@+id/abxyPad"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="64dp"
-        android:layout_marginStart="0dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="-8dp"
+        android:layout_marginEnd="64dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintEnd_toStartOf="@+id/buttonRT"
-        app:layout_constraintTop_toBottomOf="@+id/joystickRight"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/directionalPad">
+        app:layout_constraintEnd_toStartOf="@+id/buttonRT"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toEndOf="@+id/directionalPad"
+        app:layout_constraintTop_toBottomOf="@+id/joystickRight">
 
         <Button
             android:id="@+id/buttonX"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="9dp"
             android:shadowColor="@android:color/black"
             android:shadowRadius="5"
             android:text="@string/buttonX"
             android:textColor="@color/colorButtonX"
-            android:padding="9dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/buttonB"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/buttonY"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="9dp"
             android:shadowColor="@android:color/black"
             android:shadowRadius="5"
             android:text="@string/buttonY"
             android:textColor="@color/colorButtonY"
-            android:padding="9dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
             app:layout_constraintBottom_toTopOf="@+id/buttonX"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <Button
             android:id="@+id/buttonB"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="9dp"
             android:shadowColor="@android:color/black"
             android:shadowRadius="5"
             android:text="@string/buttonB"
             android:textColor="@color/colorButtonB"
-            android:padding="9dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@+id/buttonX"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/buttonA"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minWidth="60dp"
+            android:minHeight="0dp"
+            android:padding="9dp"
             android:shadowColor="@android:color/black"
             android:shadowRadius="5"
             android:text="@string/buttonA"
             android:textColor="@color/colorButtonA"
-            android:padding="9dp"
-            android:minHeight="0dp"
-            android:minWidth="60dp"
-            app:layout_constraintTop_toBottomOf="@+id/buttonX"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toBottomOf="@+id/buttonX" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -224,8 +225,8 @@
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:minWidth="30dp"
         android:max="100"
+        android:minWidth="30dp"
         android:progress="50"
         android:rotation="270"
         android:scaleX="8.0"
@@ -243,8 +244,8 @@
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:minWidth="30dp"
         android:max="100"
+        android:minWidth="30dp"
         android:progress="50"
         android:rotation="270"
         android:scaleX="8.0"
@@ -257,42 +258,46 @@
 
     <io.github.controlwear.virtual.joystick.android.JoystickView
         android:id="@+id/joystickLeft"
-        xmlns:custom="http://schemas.android.com/apk/res-auto"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:minHeight="50dp"
-        android:minWidth="50dp"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="-16dp"
         android:layout_marginTop="-16dp"
-        android:layout_marginStart="0dp"
-        custom:JV_borderWidth="4dp"
-        custom:JV_backgroundColor="@color/joystickBackground"
-        custom:JV_borderColor="@color/joystickBorder"
-        custom:JV_buttonColor="@color/joystickButton"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="-32dp"
+        app:JV_backgroundColor="@color/joystickBackground"
+        app:JV_borderColor="@color/joystickBorder"
+        app:JV_borderWidth="4dp"
+        app:JV_buttonColor="@color/joystickButton"
+        app:layout_constraintBottom_toTopOf="@+id/directionalPad"
+        app:layout_constraintEnd_toStartOf="@+id/buttonHOME"
         app:layout_constraintStart_toEndOf="@+id/buttonLT"
-        app:layout_constraintTop_toBottomOf="@+id/buttonLB"/>
+        app:layout_constraintTop_toBottomOf="@+id/buttonLB" />
 
     <io.github.controlwear.virtual.joystick.android.JoystickView
         android:id="@+id/joystickRight"
-        xmlns:custom="http://schemas.android.com/apk/res-auto"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
         android:layout_marginTop="-16dp"
-        android:layout_marginEnd="0dp"
-        custom:JV_borderWidth="4dp"
-        custom:JV_backgroundColor="@color/joystickBackground"
-        custom:JV_borderColor="@color/joystickBorder"
-        custom:JV_buttonColor="@color/joystickButton"
+        android:layout_marginEnd="-16dp"
+        android:layout_marginBottom="-32dp"
+        app:JV_backgroundColor="@color/joystickBackground"
+        app:JV_borderColor="@color/joystickBorder"
+        app:JV_borderWidth="4dp"
+        app:JV_buttonColor="@color/joystickButton"
+        app:layout_constraintBottom_toTopOf="@+id/abxyPad"
         app:layout_constraintEnd_toStartOf="@+id/buttonRT"
-        app:layout_constraintTop_toBottomOf ="@+id/buttonRB"/>
+        app:layout_constraintStart_toEndOf="@+id/buttonHOME"
+        app:layout_constraintTop_toBottomOf="@+id/buttonRB" />
 
     <Button
         android:id="@+id/buttonHOME"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/buttonHOME"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@+id/buttonSTART"
+        android:text="@string/buttonHOME"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toBottomOf="@+id/buttonSTART" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
