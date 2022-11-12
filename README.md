@@ -103,6 +103,7 @@ See [Game Steering Wheel Settings](SETTINGS.md) for more details.
 - [x] Memorized user settings
 - [x] Connection under same network (does not have to be Wifi hotspot)
 - [x] Fully implemented Xbox controller emulator
+- [ ] Force feedbacks
 
 ------
 
